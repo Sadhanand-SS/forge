@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forge — Diet Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a, #1e1b4b);
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: linear-gradient(135deg, #6366f1, #8b5cf6);
+            --accent-primary-hover: linear-gradient(135deg, #4f46e5, #7c3aed);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --danger: #f43f5e;
+            --warning: #f59e0b;
+            --info: #06b6d4;
+            --input-bg: rgba(15, 23, 42, 0.6);
+            --transition-speed: 0.25s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            letter-spacing: -0.05em;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .api-config {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(15, 23, 42, 0.4);
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            border: 1px solid var(--card-border);
+        }
+
+        .api-config label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .api-config input {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-family: monospace;
+            font-size: 0.85rem;
+            width: 220px;
+            outline: none;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(15, 23, 42, 0.4);
+            padding: 0.25rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--card-border);
+            width: fit-content;
+            margin-bottom: 2rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+        }
+
+        .tab-btn.active {
+            background: var(--accent-primary);
+            color: var(--text-main);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Main layouts */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        @media (min-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 390px 1fr;
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(12px);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 2rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 0.75rem;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 0.375rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 0.625rem 0.875rem;
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 0.5rem;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: border-color var(--transition-speed);
+            outline: none;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        textarea:focus,
+        select:focus {
+            border-color: #818cf8;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--accent-primary);
+            border: none;
+            color: var(--text-main);
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: var(--accent-primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(148, 163, 184, 0.15);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: var(--text-main);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(148, 163, 184, 0.25);
+            box-shadow: none;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            box-shadow: 0 4px 12px rgba(244, 63, 94, 0.2);
+        }
+
+        .btn-danger:hover {
+            background: #e11d48;
+            box-shadow: 0 6px 16px rgba(244, 63, 94, 0.3);
+        }
+
+        .btn-icon {
+            width: 2.25rem;
+            height: 2.25rem;
+            border-radius: 0.5rem;
+            padding: 0;
+        }
+
+        /* Search Bar */
+        .search-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* List Items */
+        .items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .list-card {
+            background: rgba(30, 41, 59, 0.45);
+            border: 1px solid var(--card-border);
+            border-radius: 0.75rem;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            transition: all var(--transition-speed);
+        }
+
+        .list-card:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateX(2px);
+            background: rgba(30, 41, 59, 0.6);
+        }
+
+        .item-info h4 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .item-info .brand {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .item-basis {
+            display: inline-block;
+            font-size: 0.75rem;
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            font-weight: 500;
+            margin-top: 0.375rem;
+            margin-right: 0.375rem;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-self: center;
+        }
+
+        /* Nutrition Badges */
+        .nutrition-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: inline-flex;
+            gap: 0.25rem;
+        }
+
+        .badge span {
+            color: var(--text-muted);
+        }
+
+        .badge strong {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .badge-cal { color: #f43f5e; border-color: rgba(244, 63, 94, 0.2); }
+        .badge-prot { color: #10b981; border-color: rgba(16, 185, 129, 0.2); }
+        .badge-carb { color: #3b82f6; border-color: rgba(59, 130, 246, 0.2); }
+        .badge-fat { color: #eab308; border-color: rgba(234, 179, 8, 0.2); }
+        .badge-fib { color: #a855f7; border-color: rgba(168, 85, 247, 0.2); }
+
+        /* Dynamic items selector for MealItem creation */
+        .meal-items-selector {
+            border: 1px solid var(--card-border);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            background: rgba(15, 23, 42, 0.3);
+            margin-bottom: 1.25rem;
+        }
+
+        .selector-row {
+            display: grid;
+            grid-template-columns: 1fr 80px 120px 38px;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            align-items: center;
+        }
+
+        /* Conversions List Editor */
+        .conversions-editor {
+            border: 1px solid var(--card-border);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            background: rgba(15, 23, 42, 0.3);
+            margin-bottom: 1rem;
+        }
+
+        .conversion-row-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .conversion-tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .conversion-tag {
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #818cf8;
+            font-size: 0.75rem;
+            padding: 0.125rem 0.5rem;
+            border-radius: 0.375rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .conversion-tag button {
+            background: transparent;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        /* Notifications */
+        #notification-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-width: 420px;
+        }
+
+        .notification {
+            background: #1e293b;
+            border-left: 4px solid var(--info);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            border-radius: 0.375rem;
+            padding: 1rem 1.25rem;
+            color: var(--text-main);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.success { border-left-color: var(--success); }
+        .notification.error { border-left-color: var(--danger); }
+        .notification.warning { border-left-color: var(--warning); }
+
+        .notification .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 1rem;
+        }
+
+        /* Helper styles */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="notification-container"></div>
+
+    <!-- Edit Ingredient Modal -->
+    <div id="edit-ingredient-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="card">
+                <div class="card-title">
+                    <span>Edit Ingredient</span>
+                    <button class="btn btn-secondary btn-icon" style="width:28px;height:28px;" onclick="closeModal('edit-ingredient-modal')">&times;</button>
+                </div>
+                <form id="edit-ingredient-form" onsubmit="handleIngredientUpdate(event)">
+                    <input type="hidden" id="edit-ingredient-id">
+                    <div class="form-group">
+                        <label for="edit-ingredient-name">Ingredient Name *</label>
+                        <input type="text" id="edit-ingredient-name" required placeholder="e.g. Oats">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-ingredient-brand">Brand (Optional)</label>
+                        <input type="text" id="edit-ingredient-brand" placeholder="e.g. Quaker">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-ingredient-netweight">Package Net Weight *</label>
+                            <input type="number" step="any" id="edit-ingredient-netweight" required placeholder="e.g. 500">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-ingredient-basis-unit-label">Net Weight Unit</label>
+                            <input type="text" id="edit-ingredient-basis-unit-label" readonly disabled style="opacity: 0.6; background: rgba(0,0,0,0.15);">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-ingredient-basis-amount">Basis Amount *</label>
+                            <input type="number" step="any" id="edit-ingredient-basis-amount" required placeholder="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-ingredient-basis-unit">Basis Unit *</label>
+                            <select id="edit-ingredient-basis-unit" required onchange="handleEditBasisUnitChange()">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Conversions Editor inside Edit Modal -->
+                    <div class="form-group">
+                        <label>Custom UOM Conversions (1 Target = Factor &times; 1 Basis UOM)</label>
+                        <div class="conversions-editor">
+                            <div class="conversion-row-inputs">
+                                <select id="edit-conv-target">
+                                    <!-- Populated dynamically -->
+                                </select>
+                                <input type="number" step="any" id="edit-conv-factor" placeholder="Factor (e.g. 0.9)">
+                                <button type="button" class="btn btn-secondary" style="width:auto; padding:0.625rem 1rem;" onclick="addModalConversion('edit')">Add</button>
+                            </div>
+                            <div id="edit-conv-tags" class="conversion-tag-list"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-ingredient-calories">Calories (kcal) *</label>
+                            <input type="number" step="any" id="edit-ingredient-calories" required value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-ingredient-protein">Protein (g) *</label>
+                            <input type="number" step="any" id="edit-ingredient-protein" required value="0">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-ingredient-carbs">Carbs (g) *</label>
+                            <input type="number" step="any" id="edit-ingredient-carbs" required value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-ingredient-fat">Fat (g) *</label>
+                            <input type="number" step="any" id="edit-ingredient-fat" required value="0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-ingredient-fiber">Fiber (g) *</label>
+                        <input type="number" step="any" id="edit-ingredient-fiber" required value="0">
+                    </div>
+                    <div class="form-row" style="margin-top: 1.25rem;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('edit-ingredient-modal')">Cancel</button>
+                        <button type="submit" class="btn">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit MealItem Modal -->
+    <div id="edit-meal-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="card">
+                <div class="card-title">
+                    <span>Edit Meal Item Details</span>
+                    <button class="btn btn-secondary btn-icon" style="width:28px;height:28px;" onclick="closeModal('edit-meal-modal')">&times;</button>
+                </div>
+                <form id="edit-meal-form" onsubmit="handleMealItemUpdate(event)">
+                    <input type="hidden" id="edit-meal-id">
+                    <div class="form-group">
+                        <label for="edit-meal-name">Meal Item Name *</label>
+                        <input type="text" id="edit-meal-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-meal-desc">Description</label>
+                        <textarea id="edit-meal-desc"></textarea>
+                    </div>
+                    <div class="form-row" style="margin-top: 1.25rem;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('edit-meal-modal')">Cancel</button>
+                        <button type="submit" class="btn">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div>
+                <h1>Forge &mdash; Diet Dashboard</h1>
+                <p style="color: var(--text-muted); font-size: 0.875rem; margin-top: 0.25rem;">Local microservice configuration dashboard</p>
+            </div>
+            <div class="api-config">
+                <label for="api-url">API Base:</label>
+                <input type="text" id="api-url" value="https://localhost:7059">
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('ingredients-tab')">Ingredient Database</button>
+            <button class="tab-btn" onclick="switchTab('meals-tab')">Meal Item Composer</button>
+            <button class="tab-btn" onclick="switchTab('units-tab')">Units Manager</button>
+        </div>
+
+        <!-- INGREDIENTS TAB -->
+        <div id="ingredients-tab" class="tab-content active">
+            <div class="dashboard-grid">
+                <!-- Create Ingredient Panel -->
+                <div class="card">
+                    <div class="card-title">Create Ingredient</div>
+                    <form id="create-ingredient-form" onsubmit="handleCreateIngredient(event)">
+                        <div class="form-group">
+                            <label for="ingredient-name">Ingredient Name *</label>
+                            <input type="text" id="ingredient-name" required placeholder="e.g. Milk, Apple">
+                        </div>
+                        <div class="form-group">
+                            <label for="ingredient-brand">Brand (Optional)</label>
+                            <input type="text" id="ingredient-brand" placeholder="e.g. Nestle, Aavin">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ingredient-netweight">Package Net Weight *</label>
+                                <input type="number" step="any" id="ingredient-netweight" required value="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="ingredient-netweight-unit">Net Weight Unit</label>
+                                <input type="text" id="ingredient-netweight-unit" readonly disabled value="Gram" style="opacity: 0.6; background: rgba(0,0,0,0.15);">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ingredient-basis-amount">Basis Amount *</label>
+                                <input type="number" step="any" id="ingredient-basis-amount" required value="100">
+                            </div>
+                            <div class="form-group">
+                                <label for="ingredient-basis-unit">Basis Unit *</label>
+                                <select id="ingredient-basis-unit" required onchange="handleCreateBasisUnitChange()">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Conversions Editor inside Create Form -->
+                        <div class="form-group">
+                            <label>UOM Conversions (1 Target = Factor &times; 1 Basis UOM)</label>
+                            <div class="conversions-editor">
+                                <div class="conversion-row-inputs">
+                                    <select id="create-conv-target">
+                                        <!-- Populated dynamically -->
+                                    </select>
+                                    <input type="number" step="any" id="create-conv-factor" placeholder="Factor (e.g. 0.9)">
+                                    <button type="button" class="btn btn-secondary" style="width:auto; padding:0.625rem 1rem;" onclick="addModalConversion('create')">Add</button>
+                                </div>
+                                <div id="create-conv-tags" class="conversion-tag-list"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ingredient-calories">Calories (kcal) *</label>
+                                <input type="number" step="any" id="ingredient-calories" required value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="ingredient-protein">Protein (g) *</label>
+                                <input type="number" step="any" id="ingredient-protein" required value="0">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ingredient-carbs">Carbohydrates (g) *</label>
+                                <input type="number" step="any" id="ingredient-carbs" required value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="ingredient-fat">Fat (g) *</label>
+                                <input type="number" step="any" id="ingredient-fat" required value="0">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="ingredient-fiber">Fiber (g) *</label>
+                            <input type="number" step="any" id="ingredient-fiber" required value="0">
+                        </div>
+                        <button type="submit" class="btn" style="margin-top: 0.5rem;">Add to Database</button>
+                    </form>
+                </div>
+
+                <!-- Ingredient List Panel -->
+                <div class="card">
+                    <div class="card-title">Ingredient Registry</div>
+                    <div class="search-container">
+                        <input type="text" id="search-ingredient-name" placeholder="Search by name..." oninput="debouncedLoadIngredients()">
+                        <input type="text" id="search-ingredient-brand" placeholder="Filter by brand..." oninput="debouncedLoadIngredients()" style="max-width: 220px;">
+                    </div>
+                    <div id="ingredients-list-container" class="items-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MEALS TAB -->
+        <div id="meals-tab" class="tab-content">
+            <div class="dashboard-grid">
+                <!-- Create MealItem Panel -->
+                <div class="card">
+                    <div class="card-title">Compose Meal Item</div>
+                    <form id="create-meal-form" onsubmit="handleCreateMealItem(event)">
+                        <div class="form-group">
+                            <label for="meal-name">Meal Item Name *</label>
+                            <input type="text" id="meal-name" required placeholder="e.g. Morning Shake">
+                        </div>
+                        <div class="form-group">
+                            <label for="meal-desc">Description</label>
+                            <textarea id="meal-desc" placeholder="e.g. High protein pre-workout recipe"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label style="display:flex; justify-content:space-between; align-items:center;">
+                                <span>Meal Ingredients</span>
+                                <button type="button" class="btn btn-secondary" style="width:auto; padding: 0.25rem 0.625rem; font-size: 0.75rem;" onclick="addMealIngredientRow()">+ Add Ingredient Row</button>
+                            </label>
+                            
+                            <div id="meal-items-rows" class="meal-items-selector" style="margin-top:0.375rem;">
+                                <!-- Dynamic rows of select food + quantity + unit dropdown -->
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn">Create Meal Item</button>
+                    </form>
+                </div>
+
+                <!-- MealItems List Panel -->
+                <div class="card">
+                    <div class="card-title">Meal Items Registry</div>
+                    <div id="meals-list-container" class="items-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- UNITS TAB -->
+        <div id="units-tab" class="tab-content">
+            <div class="dashboard-grid">
+                <!-- Create/Edit Unit Panel -->
+                <div class="card">
+                    <div class="card-title" id="unit-form-title">Create Unit of Measure</div>
+                    <form id="create-unit-form" onsubmit="handleCreateOrUpdateUnit(event)">
+                        <input type="hidden" id="unit-edit-id">
+                        <div class="form-group">
+                            <label for="unit-name">Unit Name *</label>
+                            <input type="text" id="unit-name" required placeholder="e.g. teaspoon, tablespoon, scoop">
+                        </div>
+                        <div class="form-group">
+                            <label for="unit-desc">Description (Optional)</label>
+                            <textarea id="unit-desc" placeholder="e.g. Standard baking teaspoon (5ml)"></textarea>
+                        </div>
+                        <div class="form-row" style="margin-top: 1rem;">
+                            <button type="button" id="btn-cancel-unit-edit" class="btn btn-secondary" style="display:none;" onclick="cancelUnitEdit()">Cancel Edit</button>
+                            <button type="submit" id="btn-submit-unit" class="btn">Create UOM</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Units Registry Panel -->
+                <div class="card">
+                    <div class="card-title">Units of Measure Registry</div>
+                    <div id="units-list-container" class="items-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.currentTarget.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+
+            if (tabId === 'meals-tab') {
+                loadMealItems();
+                resetMealItemForm();
+            } else if (tabId === 'units-tab') {
+                loadUnits();
+                cancelUnitEdit();
+            } else {
+                loadIngredients();
+            }
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        const debouncedLoadIngredients = debounce(loadIngredients, 250);
+
+        // Notification Helper
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notification-container');
+            const toast = document.createElement('div');
+            toast.className = `notification ${type}`;
+            toast.innerHTML = `
+                <span>${message}</span>
+                <button class="close-btn" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+
+        // Modal Helpers
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Global state
+        let localIngredientsCache = [];
+        let localUnitsCache = [];
+        let unitNamesMap = {}; // Id -> Name dictionary
+        let temporaryConversions = []; // conversion editor temporary list
+
+        function getApiUrl() {
+            return document.getElementById('api-url').value.trim();
+        }
+
+        // --- UNITS OF MEASURE SERVICE ---
+        async function loadUnits() {
+            try {
+                const res = await fetch(`${getApiUrl()}/api/CustomUnits/Get`);
+                if (!res.ok) throw new Error(await res.text());
+                localUnitsCache = await res.json();
+                
+                unitNamesMap = {};
+                localUnitsCache.forEach(u => {
+                    unitNamesMap[u.id] = u.name;
+                });
+
+                repopulateUnitSelectors();
+                renderUnitsList();
+            } catch (err) {
+                console.error(err);
+                showNotification(`Failed to load UOMs: ${err.message}`, 'error');
+            }
+        }
+
+        function repopulateUnitSelectors() {
+            const selects = [
+                document.getElementById('ingredient-basis-unit'),
+                document.getElementById('edit-ingredient-basis-unit'),
+                document.getElementById('create-conv-target'),
+                document.getElementById('edit-conv-target')
+            ];
+
+            selects.forEach(selectEl => {
+                if (!selectEl) return;
+                const prevVal = selectEl.value;
+                selectEl.innerHTML = localUnitsCache.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+                if (prevVal && selectEl.querySelector(`option[value="${prevVal}"]`)) {
+                    selectEl.value = prevVal;
+                }
+            });
+        }
+
+        function renderUnitsList() {
+            const container = document.getElementById('units-list-container');
+            if (localUnitsCache.length === 0) {
+                container.innerHTML = '<div class="empty-state">No units found.</div>';
+                return;
+            }
+
+            container.innerHTML = localUnitsCache.map(u => {
+                const typeBadge = u.isSystem 
+                    ? `<span style="font-size:0.7rem; background:rgba(16,185,129,0.15); color:var(--success); padding:0.1rem 0.5rem; border-radius:9999px;">System</span>`
+                    : `<span style="font-size:0.7rem; background:rgba(99,102,241,0.15); color:#818cf8; padding:0.1rem 0.5rem; border-radius:9999px;">Custom</span>`;
+
+                const actionsHtml = u.isSystem
+                    ? `<span style="font-size:0.75rem; color:var(--text-muted); font-style:italic; align-self:center;">Locked</span>`
+                    : `
+                        <div class="item-actions">
+                            <button class="btn btn-secondary btn-icon" title="Edit Unit" onclick="startUnitEdit('${u.id}', '${u.name.replace(/'/g, "\\'")}', '${u.description.replace(/'/g, "\\'")}')">&#9998;</button>
+                            <button class="btn btn-danger btn-icon" title="Delete Unit" onclick="deleteUnit('${u.id}')">&times;</button>
+                        </div>
+                    `;
+
+                return `
+                    <div class="list-card">
+                        <div class="item-info" style="flex:1;">
+                            <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                                <h4>${u.name}</h4>
+                                ${typeBadge}
+                            </div>
+                            <p style="font-size:0.85rem; color:var(--text-muted);">${u.description || 'No description'}</p>
+                        </div>
+                        ${actionsHtml}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function handleCreateOrUpdateUnit(e) {
+            e.preventDefault();
+            const id = document.getElementById('unit-edit-id').value;
+            const name = document.getElementById('unit-name').value.trim();
+            const description = document.getElementById('unit-desc').value.trim();
+
+            const isEdit = !!id;
+            const url = isEdit 
+                ? `${getApiUrl()}/api/CustomUnits/Update/${id}` 
+                : `${getApiUrl()}/api/CustomUnits/Create`;
+
+            const body = { name, description };
+
+            try {
+                const res = await fetch(url, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error(await res.text());
+
+                showNotification(`Unit "${name}" successfully ${isEdit ? 'updated' : 'created'}!`, 'success');
+                cancelUnitEdit();
+                await loadUnits();
+            } catch (err) {
+                showNotification(`Operation failed: ${err.message}`, 'error');
+            }
+        }
+
+        function startUnitEdit(id, name, desc) {
+            document.getElementById('unit-edit-id').value = id;
+            document.getElementById('unit-name').value = name;
+            document.getElementById('unit-desc').value = desc;
+
+            document.getElementById('unit-form-title').innerText = "Edit Unit of Measure";
+            document.getElementById('btn-submit-unit').innerText = "Save Changes";
+            document.getElementById('btn-cancel-unit-edit').style.display = "inline-flex";
+        }
+
+        function cancelUnitEdit() {
+            document.getElementById('create-unit-form').reset();
+            document.getElementById('unit-edit-id').value = "";
+            document.getElementById('unit-form-title').innerText = "Create Unit of Measure";
+            document.getElementById('btn-submit-unit').innerText = "Create UOM";
+            document.getElementById('btn-cancel-unit-edit').style.display = "none";
+        }
+
+        async function deleteUnit(id) {
+            if (!confirm("Are you sure you want to delete this custom unit of measure?")) return;
+            try {
+                const res = await fetch(`${getApiUrl()}/api/CustomUnits/Delete/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error(await res.text());
+
+                showNotification("Unit of measure deleted.", "success");
+                await loadUnits();
+            } catch (err) {
+                showNotification(`Delete failed: ${err.message}`, 'error');
+            }
+        }
+
+        // --- CONVERSIONS EDITOR LOGIC ---
+        function handleCreateBasisUnitChange() {
+            const val = document.getElementById('ingredient-basis-unit').value;
+            document.getElementById('ingredient-netweight-unit').value = unitNamesMap[val] || '';
+        }
+
+        function handleEditBasisUnitChange() {
+            const val = document.getElementById('edit-ingredient-basis-unit').value;
+            document.getElementById('edit-ingredient-basis-unit-label').value = unitNamesMap[val] || '';
+        }
+
+        function addModalConversion(mode) {
+            const targetSelect = document.getElementById(`${mode}-conv-target`);
+            const factorInput = document.getElementById(`${mode}-conv-factor`);
+
+            const targetUnitId = targetSelect.value;
+            const conversionFactor = parseFloat(factorInput.value);
+
+            if (!targetUnitId) {
+                showNotification("Please select a target unit.", "warning");
+                return;
+            }
+
+            if (isNaN(conversionFactor) || conversionFactor <= 0) {
+                showNotification("Please enter a valid positive conversion factor.", "warning");
+                return;
+            }
+
+            const basisUnitId = document.getElementById(mode === 'create' ? 'ingredient-basis-unit' : 'edit-ingredient-basis-unit').value;
+            if (targetUnitId === basisUnitId) {
+                showNotification("Cannot add conversion to the same default basis unit.", "warning");
+                return;
+            }
+
+            // check duplicate
+            temporaryConversions = temporaryConversions.filter(c => c.targetUnitId !== targetUnitId);
+
+            temporaryConversions.push({ targetUnitId, conversionFactor });
+            factorInput.value = '';
+            renderConversionTags(mode);
+        }
+
+        function removeConversionTag(mode, targetUnitId) {
+            temporaryConversions = temporaryConversions.filter(c => c.targetUnitId !== targetUnitId);
+            renderConversionTags(mode);
+        }
+
+        function renderConversionTags(mode) {
+            const container = document.getElementById(`${mode}-conv-tags`);
+            const basisUnitId = document.getElementById(mode === 'create' ? 'ingredient-basis-unit' : 'edit-ingredient-basis-unit').value;
+            const basisUnitName = unitNamesMap[basisUnitId] || 'Basis';
+
+            container.innerHTML = temporaryConversions.map(c => `
+                <div class="conversion-tag">
+                    <span>1 ${unitNamesMap[c.targetUnitId] || 'Unit'} = ${c.conversionFactor} ${basisUnitName}</span>
+                    <button type="button" onclick="removeConversionTag('${mode}', '${c.targetUnitId}')">&times;</button>
+                </div>
+            `).join('');
+        }
+
+        // --- INGREDIENTS LOGIC ---
+        async function loadIngredients() {
+            const search = document.getElementById('search-ingredient-name').value.trim();
+            const brand = document.getElementById('search-ingredient-brand').value.trim();
+            const url = `${getApiUrl()}/api/Ingredients/Get?search=${encodeURIComponent(search)}&brand=${encodeURIComponent(brand)}`;
+            
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(await res.text());
+                const ingredients = await res.json();
+                localIngredientsCache = ingredients;
+                renderIngredients(ingredients);
+            } catch (err) {
+                console.error(err);
+                showNotification(`Failed to load ingredients: ${err.message}`, 'error');
+            }
+        }
+
+        function renderIngredients(ingredients) {
+            const container = document.getElementById('ingredients-list-container');
+            if (ingredients.length === 0) {
+                container.innerHTML = '<div class="empty-state">No ingredients registered. Add ingredients in the left panel.</div>';
+                return;
+            }
+
+            container.innerHTML = ingredients.map(ing => {
+                const conversionsHtml = ing.conversions.length === 0
+                    ? '<span style="color:var(--text-muted); font-size:0.75rem; font-style:italic;">None</span>'
+                    : ing.conversions.map(c => `
+                        <span class="conversion-tag" style="background:rgba(255,255,255,0.03); border-color:rgba(255,255,255,0.06); color:var(--text-muted); cursor:default; padding:0.1rem 0.4rem;">
+                            1 ${c.targetUnitName} = ${c.conversionFactor} ${ing.nutritionBasis.unitName}
+                        </span>
+                    `).join(' ');
+
+                return `
+                    <div class="list-card">
+                        <div class="item-info" style="flex:1;">
+                            <div class="brand">${ing.brand || 'No Brand'}</div>
+                            <h4>${ing.name}</h4>
+                            <div style="margin-top: 0.375rem;">
+                                <span class="item-basis">Basis: ${ing.nutritionBasis.amount} ${ing.nutritionBasis.unitName}</span>
+                                <span class="item-basis" style="background:rgba(6, 182, 212, 0.15); color:var(--info);">Net Weight: ${ing.netWeight} ${ing.nutritionBasis.unitName}</span>
+                            </div>
+                            <div style="margin-top:0.5rem; display:flex; flex-wrap:wrap; align-items:center; gap:0.375rem;">
+                                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Custom Units:</span>
+                                ${conversionsHtml}
+                            </div>
+                            <div class="nutrition-badges">
+                                <div class="badge badge-cal">Cal <strong>${ing.nutrition.calories} kcal</strong></div>
+                                <div class="badge badge-prot">P <strong>${ing.nutrition.protein}g</strong></div>
+                                <div class="badge badge-carb">C <strong>${ing.nutrition.carbohydrates}g</strong></div>
+                                <div class="badge badge-fat">F <strong>${ing.nutrition.fat}g</strong></div>
+                                <div class="badge badge-fib">Fib <strong>${ing.nutrition.fiber}g</strong></div>
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn btn-secondary btn-icon" title="Edit Ingredient" onclick="openEditIngredientModal('${ing.id}')">&#9998;</button>
+                            <button class="btn btn-danger btn-icon" title="Delete Ingredient" onclick="deleteIngredient('${ing.id}')">&times;</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function handleCreateIngredient(e) {
+            e.preventDefault();
+            const body = {
+                name: document.getElementById('ingredient-name').value.trim(),
+                brand: document.getElementById('ingredient-brand').value.trim() || null,
+                netWeight: parseFloat(document.getElementById('ingredient-netweight').value),
+                nutritionBasisAmount: parseFloat(document.getElementById('ingredient-basis-amount').value),
+                nutritionBasisUnitId: document.getElementById('ingredient-basis-unit').value,
+                calories: parseFloat(document.getElementById('ingredient-calories').value),
+                protein: parseFloat(document.getElementById('ingredient-protein').value),
+                carbohydrates: parseFloat(document.getElementById('ingredient-carbs').value),
+                fat: parseFloat(document.getElementById('ingredient-fat').value),
+                fiber: parseFloat(document.getElementById('ingredient-fiber').value),
+                conversions: temporaryConversions
+            };
+
+            try {
+                const res = await fetch(`${getApiUrl()}/api/Ingredients/Create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error(await res.text());
+                
+                showNotification(`Ingredient "${body.name}" successfully created!`, 'success');
+                document.getElementById('create-ingredient-form').reset();
+                temporaryConversions = [];
+                renderConversionTags('create');
+                handleCreateBasisUnitChange();
+                loadIngredients();
+            } catch (err) {
+                showNotification(`Create failed: ${err.message}`, 'error');
+            }
+        }
+
+        async function openEditIngredientModal(id) {
+            const ing = localIngredientsCache.find(i => i.id === id);
+            if (!ing) return;
+
+            document.getElementById('edit-ingredient-id').value = ing.id;
+            document.getElementById('edit-ingredient-name').value = ing.name;
+            document.getElementById('edit-ingredient-brand').value = ing.brand || '';
+            document.getElementById('edit-ingredient-netweight').value = ing.netWeight;
+            document.getElementById('edit-ingredient-basis-amount').value = ing.nutritionBasis.amount;
+            document.getElementById('edit-ingredient-basis-unit').value = ing.nutritionBasis.unitId;
+            document.getElementById('edit-ingredient-calories').value = ing.nutrition.calories;
+            document.getElementById('edit-ingredient-protein').value = ing.nutrition.protein;
+            document.getElementById('edit-ingredient-carbs').value = ing.nutrition.carbohydrates;
+            document.getElementById('edit-ingredient-fat').value = ing.nutrition.fat;
+            document.getElementById('edit-ingredient-fiber').value = ing.nutrition.fiber;
+
+            handleEditBasisUnitChange();
+
+            // Populate conversions editor
+            temporaryConversions = ing.conversions.map(c => ({
+                targetUnitId: c.targetUnitId,
+                conversionFactor: c.conversionFactor
+            }));
+            renderConversionTags('edit');
+
+            openModal('edit-ingredient-modal');
+        }
+
+        async function handleIngredientUpdate(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-ingredient-id').value;
+            const body = {
+                id: id,
+                name: document.getElementById('edit-ingredient-name').value.trim(),
+                brand: document.getElementById('edit-ingredient-brand').value.trim() || null,
+                netWeight: parseFloat(document.getElementById('edit-ingredient-netweight').value),
+                nutritionBasisAmount: parseFloat(document.getElementById('edit-ingredient-basis-amount').value),
+                nutritionBasisUnitId: document.getElementById('edit-ingredient-basis-unit').value,
+                calories: parseFloat(document.getElementById('edit-ingredient-calories').value),
+                protein: parseFloat(document.getElementById('edit-ingredient-protein').value),
+                carbohydrates: parseFloat(document.getElementById('edit-ingredient-carbs').value),
+                fat: parseFloat(document.getElementById('edit-ingredient-fat').value),
+                fiber: parseFloat(document.getElementById('edit-ingredient-fiber').value),
+                conversions: temporaryConversions
+            };
+
+            try {
+                const res = await fetch(`${getApiUrl()}/api/Ingredients/Update/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error(await res.text());
+
+                showNotification(`Ingredient successfully updated!`, 'success');
+                closeModal('edit-ingredient-modal');
+                temporaryConversions = [];
+                loadIngredients();
+            } catch (err) {
+                showNotification(`Update failed: ${err.message}`, 'error');
+            }
+        }
+
+        async function deleteIngredient(id) {
+            if (!confirm("Are you sure you want to delete this ingredient?")) return;
+            try {
+                const res = await fetch(`${getApiUrl()}/api/Ingredients/Delete/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error(await res.text());
+
+                showNotification("Ingredient deleted.", "success");
+                loadIngredients();
+            } catch (err) {
+                showNotification(`Delete failed: ${err.message}`, 'error');
+            }
+        }
+
+
+        // --- MEALS LOGIC ---
+        async function loadMealItems() {
+            try {
+                const res = await fetch(`${getApiUrl()}/api/MealItems/Get`);
+                if (!res.ok) throw new Error(await res.text());
+                const mealItems = await res.json();
+                renderMealItems(mealItems);
+            } catch (err) {
+                console.error(err);
+                showNotification(`Failed to load meal items: ${err.message}`, 'error');
+            }
+        }
+
+        function renderMealItems(mealItems) {
+            const container = document.getElementById('meals-list-container');
+            if (mealItems.length === 0) {
+                container.innerHTML = '<div class="empty-state">No meal items composed yet. Add a new meal item in the left panel.</div>';
+                return;
+            }
+
+            container.innerHTML = mealItems.map(meal => {
+                const ingredientsHtml = meal.ingredients.length === 0 
+                    ? '<li style="font-style:italic; color:var(--text-muted);">No ingredients in this recipe</li>'
+                    : meal.ingredients.map(ing => `
+                        <li style="display:flex; justify-content:space-between; font-size:0.85rem; border-bottom:1px solid rgba(255,255,255,0.03); padding: 0.25rem 0;">
+                            <span>${ing.ingredientName} &mdash; <strong>${ing.quantity} ${ing.unitName}</strong></span>
+                            <button class="close-btn" style="background:none; border:none; color:var(--danger); cursor:pointer;" title="Remove Ingredient" onclick="removeMealIngredient('${meal.id}', '${ing.id}')">&times;</button>
+                        </li>
+                    `).join('');
+
+                return `
+                    <div class="list-card" style="flex-direction:column; gap:1rem; align-items:stretch;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <div>
+                                <h4 style="font-size:1.15rem; color:#818cf8;">${meal.name}</h4>
+                                <p style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">${meal.description || 'No description'}</p>
+                            </div>
+                            <div class="item-actions" style="align-self:flex-start;">
+                                <button class="btn btn-secondary btn-icon" title="Edit Info" onclick="openEditMealItemModal('${meal.id}', '${meal.name.replace(/'/g, "\\'")}', '${(meal.description || '').replace(/'/g, "\\'")}')">&#9998;</button>
+                                <button class="btn btn-danger btn-icon" title="Delete Meal Item" onclick="deleteMealItem('${meal.id}')">&times;</button>
+                            </div>
+                        </div>
+
+                        <!-- Add Ingredient Row -->
+                        <div style="border-top:1px solid var(--card-border); padding-top:0.75rem;">
+                            <form onsubmit="handleAppendMealIngredient(event, '${meal.id}')" style="display:flex; gap:0.5rem; align-items:center;">
+                                <select name="ingredientId" required style="flex:1;" onchange="updateRowUnitPlaceholder(this)">
+                                    <option value="" disabled selected>Add ingredient...</option>
+                                    ${localIngredientsCache.map(i => `<option value="${i.id}">${i.name} (${i.brand || 'Generic'})</option>`).join('')}
+                                </select>
+                                <input type="number" step="any" name="quantity" required placeholder="Qty" style="width:70px;">
+                                <select name="unit" required style="width:120px;">
+                                    <option value="" disabled selected>Unit...</option>
+                                </select>
+                                <button type="submit" class="btn" style="width:auto; padding: 0.625rem 1rem;">Add</button>
+                            </form>
+                        </div>
+
+                        <!-- Ingredients List -->
+                        <div style="background:rgba(0,0,0,0.15); border-radius:0.5rem; padding:0.75rem 1rem; border:1px solid rgba(255,255,255,0.03);">
+                            <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:600; margin-bottom:0.375rem;">Ingredients</div>
+                            <ul style="list-style:none;">
+                                ${ingredientsHtml}
+                            </ul>
+                        </div>
+
+                        <!-- Aggregate Nutrition -->
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(16, 185, 129, 0.05); border-radius:0.5rem; padding:0.5rem 1rem; border: 1px dashed rgba(16, 185, 129, 0.2);">
+                            <span style="font-size:0.8rem; font-weight:600; color:var(--success);">Total Macros:</span>
+                            <div class="nutrition-badges">
+                                <div class="badge badge-cal">Cal <strong>${meal.totalNutrition.calories.toFixed(1)} kcal</strong></div>
+                                <div class="badge badge-prot">P <strong>${meal.totalNutrition.protein.toFixed(1)}g</strong></div>
+                                <div class="badge badge-carb">C <strong>${meal.totalNutrition.carbohydrates.toFixed(1)}g</strong></div>
+                                <div class="badge badge-fat">F <strong>${meal.totalNutrition.fat.toFixed(1)}g</strong></div>
+                                <div class="badge badge-fib">Fib <strong>${meal.totalNutrition.fiber.toFixed(1)}g</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Dynamic Create Meal Ingredient Rows
+        function addMealIngredientRow() {
+            const container = document.getElementById('meal-items-rows');
+            const rowCount = container.children.length;
+            const row = document.createElement('div');
+            row.className = 'selector-row';
+            row.id = `meal-item-row-${rowCount}`;
+
+            const optionsHtml = localIngredientsCache.map(i => 
+                `<option value="${i.id}">${i.name} (${i.brand || 'Generic'})</option>`
+            ).join('');
+
+            row.innerHTML = `
+                <select name="ingredientId" required onchange="handleRowFoodSelect(this, ${rowCount})">
+                    <option value="" disabled selected>Select ingredient...</option>
+                    ${optionsHtml}
+                </select>
+                <input type="number" step="any" name="quantity" required placeholder="Qty">
+                <select name="unit" required>
+                    <option value="" disabled selected>Unit...</option>
+                </select>
+                <button type="button" class="btn btn-danger btn-icon" style="width:100%;" onclick="removeMealIngredientRow(${rowCount})">&times;</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function removeMealIngredientRow(index) {
+            const row = document.getElementById(`meal-item-row-${index}`);
+            if (row) row.remove();
+        }
+
+        // Populate unit selector with only supported conversions + default unit
+        function handleRowFoodSelect(selectEl, rowIndex) {
+            const ingredientId = selectEl.value;
+            const ing = localIngredientsCache.find(i => i.id === ingredientId);
+            if (!ing) return;
+
+            const row = document.getElementById(`meal-item-row-${rowIndex}`);
+            const unitSelect = row.querySelector('select[name="unit"]');
+            
+            // clear and append default
+            unitSelect.innerHTML = `<option value="${ing.nutritionBasis.unitId}">${ing.nutritionBasis.unitName}</option>`;
+            
+            // append conversions
+            if (ing.conversions) {
+                ing.conversions.forEach(c => {
+                    unitSelect.innerHTML += `<option value="${c.targetUnitId}">${c.targetUnitName}</option>`;
+                });
+            }
+
+            // select default unit initially
+            unitSelect.value = ing.nutritionBasis.unitId;
+        }
+
+        // Populate unit selector for append form in list card
+        function updateRowUnitPlaceholder(selectEl) {
+            const ingredientId = selectEl.value;
+            const ing = localIngredientsCache.find(i => i.id === ingredientId);
+            if (!ing) return;
+
+            const form = selectEl.parentElement;
+            const unitSelect = form.querySelector('select[name="unit"]');
+            
+            unitSelect.innerHTML = `<option value="${ing.nutritionBasis.unitId}">${ing.nutritionBasis.unitName}</option>`;
+            
+            if (ing.conversions) {
+                ing.conversions.forEach(c => {
+                    unitSelect.innerHTML += `<option value="${c.targetUnitId}">${c.targetUnitName}</option>`;
+                });
+            }
+
+            unitSelect.value = ing.nutritionBasis.unitId;
+        }
+
+        function resetMealItemForm() {
+            document.getElementById('create-meal-form').reset();
+            const container = document.getElementById('meal-items-rows');
+            container.innerHTML = '';
+            // Add two default blank rows
+            addMealIngredientRow();
+            addMealIngredientRow();
+        }
+
+        async function handleCreateMealItem(e) {
+            e.preventDefault();
+            const name = document.getElementById('meal-name').value.trim();
+            const description = document.getElementById('meal-desc').value.trim();
+
+            const rowsContainer = document.getElementById('meal-items-rows');
+            const ingredients = [];
+
+            for (const row of rowsContainer.children) {
+                const ingredientId = row.querySelector('select[name="ingredientId"]').value;
+                const quantity = parseFloat(row.querySelector('input[name="quantity"]').value);
+                const unitId = row.querySelector('select[name="unit"]').value;
+
+                if (ingredientId && !isNaN(quantity) && unitId) {
+                    ingredients.push({ ingredientId, quantity, unitId });
+                }
+            }
+
+            const body = { name, description, ingredients };
+
+            try {
+                const res = await fetch(`${getApiUrl()}/api/MealItems/Create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error(await res.text());
+
+                showNotification(`Meal item "${name}" successfully created!`, 'success');
+                resetMealItemForm();
+                loadMealItems();
+            } catch (err) {
+                showNotification(`Create failed: ${err.message}`, 'error');
+            }
+        }
+
+        async function openEditMealItemModal(id, name, desc) {
+            document.getElementById('edit-meal-id').value = id;
+            document.getElementById('edit-meal-name').value = name;
+            document.getElementById('edit-meal-desc').value = desc;
+            openModal('edit-meal-modal');
+        }
+
+        async function handleMealItemUpdate(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-meal-id').value;
+            const body = {
+                id: id,
+                name: document.getElementById('edit-meal-name').value.trim(),
+                description: document.getElementById('edit-meal-desc').value.trim()
+            };
+
+            try {
+                const res = await fetch(`${getApiUrl()}/api/MealItems/Update/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error(await res.text());
+
+                showNotification(`Meal item details updated!`, 'success');
+                closeModal('edit-meal-modal');
+                loadMealItems();
+            } catch (err) {
+                showNotification(`Update failed: ${err.message}`, 'error');
+            }
+        }
+
+        async function deleteMealItem(id) {
+            if (!confirm("Are you sure you want to delete this meal item?")) return;
+            try {
+                const res = await fetch(`${getApiUrl()}/api/MealItems/Delete/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error(await res.text());
+
+                showNotification("Meal item deleted.", "success");
+                loadMealItems();
+            } catch (err) {
+                showNotification(`Delete failed: ${err.message}`, 'error');
+            }
+        }
+
+        // Add ingredient to existing MealItem
+        async function handleAppendMealIngredient(e, mealItemId) {
+            e.preventDefault();
+            const form = e.target;
+            const body = {
+                ingredientId: form.elements.ingredientId.value,
+                quantity: parseFloat(form.elements.quantity.value),
+                unitId: form.elements.unit.value
+            };
+
+            try {
+                const res = await fetch(`${getApiUrl()}/api/MealItems/AddIngredient/${mealItemId}/ingredients`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error(await res.text());
+
+                showNotification("Ingredient added to recipe.", "success");
+                form.reset();
+                loadMealItems();
+            } catch (err) {
+                showNotification(`Failed to add ingredient: ${err.message}`, 'error');
+            }
+        }
+
+        // Remove ingredient from existing MealItem
+        async function removeMealIngredient(mealItemId, ingredientId) {
+            if (!confirm("Remove this ingredient from the recipe?")) return;
+            try {
+                const res = await fetch(`${getApiUrl()}/api/MealItems/RemoveIngredient/${mealItemId}/ingredients/${ingredientId}`, {
+                    method: 'DELETE'
+                });
+                if (!res.ok) throw new Error(await res.text());
+
+                showNotification("Ingredient removed from recipe.", "success");
+                loadMealItems();
+            } catch (err) {
+                showNotification(`Failed to remove ingredient: ${err.message}`, 'error');
+            }
+        }
+
+        // Initial Load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadUnits();
+            handleCreateBasisUnitChange();
+            await loadIngredients();
+            resetMealItemForm();
+        });
+    </script>
+</body>
+</html>
