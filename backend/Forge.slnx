@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/Services/" />
+  <Folder Name="/Services/Diet/">
+    <Project Path="Services/Diet/Forge.Diet.API/Forge.Diet.API.csproj" />
+    <Project Path="Services/Diet/Forge.Diet.Application/Forge.Diet.Application.csproj" />
+    <Project Path="Services/Diet/Forge.Diet.Domain/Forge.Diet.Domain.csproj" />
+    <Project Path="Services/Diet/Forge.Diet.Infrastructure/Forge.Diet.Infrastructure.csproj" />
+  </Folder>
+</Solution>

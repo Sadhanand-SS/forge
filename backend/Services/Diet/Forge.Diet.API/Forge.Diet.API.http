@@ -1,0 +1,6 @@
+@Forge.Diet.API_HostAddress = http://localhost:5062
+
+GET {{Forge.Diet.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
