@@ -16,6 +16,9 @@ public class DietDbContext : DbContext, IDietDbContext
     public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
     public DbSet<MealItem> MealItems => Set<MealItem>();
     public DbSet<MealIngredient> MealIngredients => Set<MealIngredient>();
+    public DbSet<Meal> Meals => Set<Meal>();
+    public DbSet<DailyMeal> DailyMeals => Set<DailyMeal>();
+    public DbSet<DailyMealMealItem> DailyMealMealItems => Set<DailyMealMealItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Forge.Diet.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Forge.Diet.Infrastructure.Migrations
 {
     [DbContext(typeof(DietDbContext))]
-    partial class DietDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260818063336_InitialSuperbase")]
+    partial class InitialSuperbase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,56 +25,6 @@ namespace Forge.Diet.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("Forge.Diet.Domain.Entities.DailyMeal", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
-
-                    b.Property<bool>("IsSkipped")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("MealId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MealId");
-
-                    b.HasIndex("Date", "MealId")
-                        .IsUnique();
-
-                    b.ToTable("DailyMeals", (string)null);
-                });
-
-            modelBuilder.Entity("Forge.Diet.Domain.Entities.DailyMealMealItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("DailyMealId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("MealItemId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Servings")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DailyMealId");
-
-                    b.HasIndex("MealItemId");
-
-                    b.ToTable("DailyMealMealItems", (string)null);
-                });
 
             modelBuilder.Entity("Forge.Diet.Domain.Entities.Ingredient", b =>
                 {
@@ -164,31 +117,6 @@ namespace Forge.Diet.Infrastructure.Migrations
                     b.HasIndex("TargetUnitId");
 
                     b.ToTable("IngredientConversions", (string)null);
-                });
-
-            modelBuilder.Entity("Forge.Diet.Domain.Entities.Meal", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsSystem")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<TimeOnly>("Time")
-                        .HasColumnType("time without time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("Meals", (string)null);
                 });
 
             modelBuilder.Entity("Forge.Diet.Domain.Entities.MealIngredient", b =>
@@ -289,36 +217,6 @@ namespace Forge.Diet.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Forge.Diet.Domain.Entities.DailyMeal", b =>
-                {
-                    b.HasOne("Forge.Diet.Domain.Entities.Meal", "Meal")
-                        .WithMany("DailyMeals")
-                        .HasForeignKey("MealId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Meal");
-                });
-
-            modelBuilder.Entity("Forge.Diet.Domain.Entities.DailyMealMealItem", b =>
-                {
-                    b.HasOne("Forge.Diet.Domain.Entities.DailyMeal", "DailyMeal")
-                        .WithMany("MealItems")
-                        .HasForeignKey("DailyMealId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Forge.Diet.Domain.Entities.MealItem", "MealItem")
-                        .WithMany()
-                        .HasForeignKey("MealItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("DailyMeal");
-
-                    b.Navigation("MealItem");
-                });
-
             modelBuilder.Entity("Forge.Diet.Domain.Entities.IngredientConversion", b =>
                 {
                     b.HasOne("Forge.Diet.Domain.Entities.Ingredient", null)
@@ -356,19 +254,9 @@ namespace Forge.Diet.Infrastructure.Migrations
                     b.Navigation("Ingredient");
                 });
 
-            modelBuilder.Entity("Forge.Diet.Domain.Entities.DailyMeal", b =>
-                {
-                    b.Navigation("MealItems");
-                });
-
             modelBuilder.Entity("Forge.Diet.Domain.Entities.Ingredient", b =>
                 {
                     b.Navigation("Conversions");
-                });
-
-            modelBuilder.Entity("Forge.Diet.Domain.Entities.Meal", b =>
-                {
-                    b.Navigation("DailyMeals");
                 });
 
             modelBuilder.Entity("Forge.Diet.Domain.Entities.MealItem", b =>

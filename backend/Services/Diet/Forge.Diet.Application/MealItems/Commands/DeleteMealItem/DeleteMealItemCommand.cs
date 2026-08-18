@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Forge.Diet.Application.Common.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Forge.Diet.Application.MealItems.Commands.DeleteMealItem;
 
@@ -23,6 +24,14 @@ public class DeleteMealItemCommandHandler
         if (mealItem == null)
         {
             throw new KeyNotFoundException($"Meal item with ID '{command.Id}' was not found.");
+        }
+
+        var inUseInDailyMeals = await _context.DailyMealMealItems
+            .AnyAsync(item => item.MealItemId == command.Id, cancellationToken);
+
+        if (inUseInDailyMeals)
+        {
+            throw new InvalidOperationException($"Meal item '{mealItem.Name}' is currently used in one or more daily meals and cannot be deleted.");
         }
 
         _context.MealItems.Remove(mealItem);
