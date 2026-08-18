@@ -25,8 +25,15 @@ public class MealItemsController : ControllerBase
         [FromServices] GetMealItemsQueryHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.HandleAsync(new GetMealItemsQuery(), cancellationToken);
-        return Ok(result);
+        try
+        {
+            var result = await handler.HandleAsync(new GetMealItemsQuery(), cancellationToken);
+            return Ok(result);
+        }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(499);
+        }
     }
 
     [HttpGet("{id:guid}")]
@@ -45,6 +52,10 @@ public class MealItemsController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(ex.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(499);
         }
     }
 
@@ -73,6 +84,10 @@ public class MealItemsController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(ex.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(499);
         }
     }
 
@@ -104,6 +119,10 @@ public class MealItemsController : ControllerBase
         {
             return BadRequest(ex.Message);
         }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(499);
+        }
     }
 
     [HttpDelete("{id:guid}")]
@@ -122,6 +141,10 @@ public class MealItemsController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(ex.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(499);
         }
     }
 
@@ -155,6 +178,10 @@ public class MealItemsController : ControllerBase
         {
             return BadRequest(ex.Message);
         }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(499);
+        }
     }
 
     [HttpDelete("{mealItemId:guid}/ingredients/{mealIngredientId:guid}")]
@@ -175,6 +202,10 @@ public class MealItemsController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(ex.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(499);
         }
     }
 }
