@@ -12,6 +12,9 @@ public interface IDietDbContext
     DbSet<UnitOfMeasure> UnitsOfMeasure { get; }
     DbSet<MealItem> MealItems { get; }
     DbSet<MealIngredient> MealIngredients { get; }
+    DbSet<Meal> Meals { get; }
+    DbSet<DailyMeal> DailyMeals { get; }
+    DbSet<DailyMealMealItem> DailyMealMealItems { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Forge.Diet.Application.DTOs;
@@ -10,6 +11,7 @@ using Forge.Diet.Application.Ingredients.Commands.UpdateIngredient;
 using Forge.Diet.Application.Ingredients.Commands.DeleteIngredient;
 using Forge.Diet.Application.Ingredients.Queries.GetIngredient;
 using Forge.Diet.Application.Ingredients.Queries.SearchIngredients;
+using Forge.Diet.Application.Ingredients.Queries.CalculateIngredientNutrition;
 
 namespace Forge.Diet.API.Controllers;
 
@@ -52,6 +54,51 @@ public class IngredientsController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(ex.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(499);
+        }
+    }
+
+    [HttpGet("{ingredientId:guid}/nutrition")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IngredientNutritionCalculationDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IngredientNutritionCalculationDto>> GetNutrition(
+        Guid ingredientId,
+        [FromQuery] Guid unitId,
+        [FromQuery] decimal amount,
+        [FromServices] IValidator<CalculateIngredientNutritionQuery> validator,
+        [FromServices] CalculateIngredientNutritionQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var query = new CalculateIngredientNutritionQuery(ingredientId, unitId, amount);
+        var validationResult = await validator.ValidateAsync(query, cancellationToken);
+
+        if (!validationResult.IsValid)
+        {
+            foreach (var error in validationResult.Errors)
+            {
+                ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+            }
+
+            return ValidationProblem(ModelState);
+        }
+
+        try
+        {
+            var result = await handler.HandleAsync(query, cancellationToken);
+
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (OperationCanceledException)
         {
