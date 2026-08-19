@@ -439,11 +439,35 @@
         }
 
         .selector-row {
-            display: grid;
-            grid-template-columns: 1fr 80px 120px 38px;
+            display: flex;
+            flex-wrap: wrap;
             gap: 0.5rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
             align-items: center;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .selector-row select[name="ingredientId"], 
+        .selector-row .searchable-dropdown-container {
+            flex: 1 1 100%;
+        }
+
+        .selector-row input[name="quantity"] {
+            flex: 1 1 70px;
+            min-width: 60px;
+        }
+
+        .selector-row select[name="unit"] {
+            flex: 1 1 100px;
+            min-width: 90px;
+        }
+
+        .selector-row .btn-danger {
+            flex: 0 0 38px;
+            height: 38px;
         }
 
         /* Conversions List Editor */
@@ -634,11 +658,35 @@
         }
 
         .selector-row {
-            display: grid;
-            grid-template-columns: 1fr 80px 120px 38px;
+            display: flex;
+            flex-wrap: wrap;
             gap: 0.5rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
             align-items: center;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .selector-row select[name="ingredientId"], 
+        .selector-row .searchable-dropdown-container {
+            flex: 1 1 100%;
+        }
+
+        .selector-row input[name="quantity"] {
+            flex: 1 1 70px;
+            min-width: 60px;
+        }
+
+        .selector-row select[name="unit"] {
+            flex: 1 1 100px;
+            min-width: 90px;
+        }
+
+        .selector-row .btn-danger {
+            flex: 0 0 38px;
+            height: 38px;
         }
 
         /* Conversions List Editor */
@@ -1112,6 +1160,109 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* Searchable Dropdown Styles */
+        .searchable-dropdown-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .dropdown-trigger-btn {
+            width: 100%;
+            padding: 0.625rem 0.875rem;
+            background: var(--input-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 0.5rem;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.9rem;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: border-color var(--transition-speed);
+        }
+
+        .dropdown-trigger-btn:focus {
+            border-color: #818cf8;
+        }
+
+        .dropdown-trigger-btn::after {
+            content: '▼';
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .dropdown-menu-panel {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 0.5rem;
+            margin-top: 0.25rem;
+            z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            padding: 0.5rem;
+        }
+
+        .dropdown-menu-panel.active {
+            display: block;
+        }
+
+        .dropdown-search-input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--card-border);
+            border-radius: 0.375rem;
+            color: var(--text-main);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            outline: none;
+        }
+
+        .dropdown-search-input:focus {
+            border-color: #818cf8;
+        }
+
+        .dropdown-items-list {
+            max-height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .dropdown-item-option {
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            transition: background var(--transition-speed);
+        }
+
+        .dropdown-item-option:hover {
+            background: rgba(99, 102, 241, 0.15);
+            color: #818cf8;
+        }
+
+        .dropdown-item-option.selected {
+            background: var(--accent-primary);
+            color: var(--text-main);
+        }
+
+        .dropdown-loading-spinner {
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
     </style>
 </head>
 <body>
@@ -1533,6 +1684,258 @@
     </div>
 
     <script>
+        // --- Endless Searchable Dropdown ---
+        const dropdownsInstances = new Map();
+
+        function makeSelectSearchableAndPaginated(selectEl) {
+            if (!selectEl) return;
+            if (dropdownsInstances.has(selectEl)) {
+                return dropdownsInstances.get(selectEl);
+            }
+            const instance = new EndlessSearchableDropdown(selectEl);
+            dropdownsInstances.set(selectEl, instance);
+            return instance;
+        }
+
+        class EndlessSearchableDropdown {
+            constructor(selectElement) {
+                this.selectElement = selectElement;
+                this.cursor = null;
+                this.searchQuery = '';
+                this.isLoading = false;
+                this.hasMore = true;
+                this.items = [];
+                this.selectedValue = selectElement.value;
+                
+                // Hide the original select
+                this.selectElement.style.display = 'none';
+                
+                // Create custom UI wrapper
+                this.wrapper = document.createElement('div');
+                this.wrapper.className = 'searchable-dropdown-container';
+                
+                this.trigger = document.createElement('button');
+                this.trigger.type = 'button';
+                this.trigger.className = 'dropdown-trigger-btn';
+                this.trigger.textContent = this.getSelectedText() || 'Select ingredient...';
+                
+                this.menu = document.createElement('div');
+                this.menu.className = 'dropdown-menu-panel';
+                
+                this.searchInput = document.createElement('input');
+                this.searchInput.type = 'text';
+                this.searchInput.className = 'dropdown-search-input';
+                this.searchInput.placeholder = 'Search ingredients...';
+                
+                this.itemsContainer = document.createElement('div');
+                this.itemsContainer.className = 'dropdown-items-list';
+                
+                this.loadingIndicator = document.createElement('div');
+                this.loadingIndicator.className = 'dropdown-loading-spinner';
+                this.loadingIndicator.textContent = 'Loading...';
+                this.loadingIndicator.style.display = 'none';
+                
+                this.menu.appendChild(this.searchInput);
+                this.menu.appendChild(this.itemsContainer);
+                this.menu.appendChild(this.loadingIndicator);
+                
+                this.wrapper.appendChild(this.trigger);
+                this.wrapper.appendChild(this.menu);
+                
+                this.selectElement.parentNode.insertBefore(this.wrapper, this.selectElement);
+                
+                // Bind events
+                this.trigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.toggleMenu();
+                });
+                
+                this.searchInput.addEventListener('click', (e) => e.stopPropagation());
+                this.searchInput.addEventListener('input', this.debounce(() => {
+                    this.searchQuery = this.searchInput.value.trim();
+                    this.reset();
+                    this.fetchNextPage();
+                }, 300));
+                
+                this.itemsContainer.addEventListener('scroll', () => {
+                    const container = this.itemsContainer;
+                    const threshold = 40; // Pixels from bottom
+                    if (container.scrollHeight - container.scrollTop - container.clientHeight < threshold) {
+                        if (this.hasMore && !this.isLoading) {
+                            this.fetchNextPage();
+                        }
+                    }
+                });
+                
+                document.addEventListener('click', () => this.closeMenu());
+            }
+            
+            getSelectedText() {
+                const selectedOption = this.selectElement.options[this.selectElement.selectedIndex];
+                return selectedOption && selectedOption.value ? selectedOption.textContent : '';
+            }
+            
+            toggleMenu() {
+                const isActive = this.menu.classList.contains('active');
+                document.querySelectorAll('.dropdown-menu-panel.active').forEach(m => {
+                    if (m !== this.menu) m.classList.remove('active');
+                });
+                
+                if (isActive) {
+                    this.closeMenu();
+                } else {
+                    this.menu.classList.add('active');
+                    this.searchInput.focus();
+                    if (this.items.length === 0) {
+                        this.reset();
+                        this.fetchNextPage();
+                    }
+                }
+            }
+            
+            closeMenu() {
+                this.menu.classList.remove('active');
+            }
+            
+            reset() {
+                this.cursor = null;
+                this.hasMore = true;
+                this.items = [];
+                this.itemsContainer.innerHTML = '';
+            }
+            
+            async fetchNextPage() {
+                if (this.isLoading || !this.hasMore) return;
+                this.isLoading = true;
+                this.loadingIndicator.style.display = 'block';
+                
+                try {
+                    const url = `${getApiUrl()}/api/Ingredients/Get?search=${encodeURIComponent(this.searchQuery)}&cursor=${encodeURIComponent(this.cursor || '')}&limit=20`;
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error('Failed to fetch ingredients');
+                    const data = await res.json();
+                    
+                    data.items.forEach(item => {
+                        if (!localIngredientsCache.find(x => x.id === item.id)) {
+                            localIngredientsCache.push(item);
+                        }
+                    });
+                    
+                    this.renderItems(data.items);
+                    this.cursor = data.nextCursor;
+                    this.hasMore = !!data.nextCursor;
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    this.isLoading = false;
+                    this.loadingIndicator.style.display = 'none';
+                }
+            }
+            
+            renderItems(newItems) {
+                newItems.forEach(item => {
+                    this.items.push(item);
+                    
+                    const div = document.createElement('div');
+                    div.className = 'dropdown-item-option';
+                    div.textContent = `${item.name}${item.brand ? ` (${item.brand})` : ' (Generic)'}`;
+                    div.dataset.value = item.id;
+                    
+                    if (this.selectedValue === item.id) {
+                        div.classList.add('selected');
+                    }
+                    
+                    div.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.selectItem(item);
+                    });
+                    
+                    this.itemsContainer.appendChild(div);
+                });
+            }
+            
+            selectItem(item) {
+                this.selectedValue = item.id;
+                this.trigger.textContent = `${item.name}${item.brand ? ` (${item.brand})` : ' (Generic)'}`;
+                
+                let option = this.selectElement.querySelector(`option[value="${item.id}"]`);
+                if (!option) {
+                    option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = `${item.name}${item.brand ? ` (${item.brand})` : ' (Generic)'}`;
+                    this.selectElement.appendChild(option);
+                }
+                
+                this.selectElement.value = item.id;
+                
+                const event = new Event('change', { bubbles: true });
+                this.selectElement.dispatchEvent(event);
+                
+                this.closeMenu();
+            }
+            
+            setValue(id) {
+                this.selectedValue = id;
+                const item = localIngredientsCache.find(x => x.id === id);
+                if (item) {
+                    this.trigger.textContent = `${item.name}${item.brand ? ` (${item.brand})` : ' (Generic)'}`;
+                    
+                    let option = this.selectElement.querySelector(`option[value="${item.id}"]`);
+                    if (!option) {
+                        option = document.createElement('option');
+                        option.value = item.id;
+                        option.textContent = `${item.name}${item.brand ? ` (${item.brand})` : ' (Generic)'}`;
+                        this.selectElement.appendChild(option);
+                    }
+                    this.selectElement.value = item.id;
+                } else if (id) {
+                    this.fetchIngredientById(id);
+                } else {
+                    this.trigger.textContent = 'Select ingredient...';
+                    this.selectElement.value = '';
+                }
+            }
+            
+            async fetchIngredientById(id) {
+                try {
+                    const res = await fetch(`${getApiUrl()}/api/Ingredients/GetById/${id}`);
+                    if (res.ok) {
+                        const item = await res.json();
+                        if (!localIngredientsCache.find(x => x.id === item.id)) {
+                            localIngredientsCache.push(item);
+                        }
+                        this.trigger.textContent = `${item.name}${item.brand ? ` (${item.brand})` : ' (Generic)'}`;
+                        
+                        let option = this.selectElement.querySelector(`option[value="${item.id}"]`);
+                        if (!option) {
+                            option = document.createElement('option');
+                            option.value = item.id;
+                            option.textContent = `${item.name}${item.brand ? ` (${item.brand})` : ' (Generic)'}`;
+                            this.selectElement.appendChild(option);
+                        }
+                        this.selectElement.value = item.id;
+                        
+                        const event = new Event('change', { bubbles: true });
+                        this.selectElement.dispatchEvent(event);
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+            
+            debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+        }
+
         // Tab switching
         function switchTab(tabId) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -1858,21 +2261,7 @@
         }
 
         function populateNutritionIngredientOptions() {
-            const ingredientSelect = document.getElementById('calc-ingredient-id');
-            const previousValue = ingredientSelect.value;
-
-            ingredientSelect.innerHTML = `
-                <option value="">Select an ingredient...</option>
-                ${localIngredientsCache.map(ingredient => `
-                    <option value="${ingredient.id}">${ingredient.name}${ingredient.brand ? ` (${ingredient.brand})` : ''}</option>
-                `).join('')}
-            `;
-
-            if (previousValue && ingredientSelect.querySelector(`option[value="${previousValue}"]`)) {
-                ingredientSelect.value = previousValue;
-            }
-
-            handleNutritionIngredientChange();
+            // Replaced by EndlessSearchableDropdown
         }
 
         function handleNutritionIngredientChange() {
@@ -1932,15 +2321,14 @@
         async function loadIngredients() {
             const search = document.getElementById('search-ingredient-name').value.trim();
             const brand = document.getElementById('search-ingredient-brand').value.trim();
-            const url = `${getApiUrl()}/api/Ingredients/Get?search=${encodeURIComponent(search)}&brand=${encodeURIComponent(brand)}`;
+            const url = `${getApiUrl()}/api/Ingredients/Get?search=${encodeURIComponent(search)}&brand=${encodeURIComponent(brand)}&limit=100`;
             
             try {
                 const res = await fetch(url);
                 if (!res.ok) throw new Error(await res.text());
-                const ingredients = await res.json();
-                localIngredientsCache = ingredients;
-                renderIngredients(ingredients);
-                populateNutritionIngredientOptions();
+                const data = await res.json();
+                localIngredientsCache = data.items;
+                renderIngredients(data.items);
             } catch (err) {
                 console.error(err);
                 showNotification(`Failed to load ingredients: ${err.message}`, 'error');
@@ -2175,16 +2563,17 @@
 
                         <!-- Add Ingredient Row -->
                         <div style="border-top:1px solid var(--card-border); padding-top:0.75rem;">
-                            <form onsubmit="handleAppendMealIngredient(event, '${meal.id}')" style="display:flex; gap:0.5rem; align-items:center;">
-                                <select name="ingredientId" required style="flex:1;" onchange="updateRowUnitPlaceholder(this)">
-                                    <option value="" disabled selected>Add ingredient...</option>
-                                    ${localIngredientsCache.map(i => `<option value="${i.id}">${i.name} (${i.brand || 'Generic'})</option>`).join('')}
-                                </select>
-                                <input type="number" step="any" name="quantity" required placeholder="Qty" style="width:70px;">
-                                <select name="unit" required style="width:120px;">
+                            <form onsubmit="handleAppendMealIngredient(event, '${meal.id}')" style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                                <div style="flex:1 1 100%;">
+                                    <select name="ingredientId" required onchange="updateRowUnitPlaceholder(this)">
+                                        <option value="" disabled selected>Add ingredient...</option>
+                                    </select>
+                                </div>
+                                <input type="number" step="any" name="quantity" required placeholder="Qty" style="flex:1 1 60px; min-width: 50px;">
+                                <select name="unit" required style="flex:1 1 90px; min-width: 80px;">
                                     <option value="" disabled selected>Unit...</option>
                                 </select>
-                                <button type="submit" class="btn" style="width:auto; padding: 0.625rem 1rem;">Add</button>
+                                <button type="submit" class="btn" style="width:auto; padding: 0.625rem 1rem; flex: 0 0 auto;">Add</button>
                             </form>
                         </div>
 
@@ -2210,6 +2599,11 @@
                     </div>
                 `;
             }).join('');
+
+            // Make the new select elements searchable and paginated!
+            container.querySelectorAll('select[name="ingredientId"]').forEach(selectEl => {
+                makeSelectSearchableAndPaginated(selectEl);
+            });
         }
 
         function getMealItemOptionsHtml() {
@@ -2543,14 +2937,9 @@
             row.className = 'selector-row';
             row.id = `meal-item-row-${rowCount}`;
 
-            const optionsHtml = localIngredientsCache.map(i => 
-                `<option value="${i.id}">${i.name} (${i.brand || 'Generic'})</option>`
-            ).join('');
-
             row.innerHTML = `
                 <select name="ingredientId" required onchange="handleRowFoodSelect(this, ${rowCount})">
                     <option value="" disabled selected>Select ingredient...</option>
-                    ${optionsHtml}
                 </select>
                 <input type="number" step="any" name="quantity" required placeholder="Qty">
                 <select name="unit" required>
@@ -2559,6 +2948,9 @@
                 <button type="button" class="btn btn-danger btn-icon" style="width:100%;" onclick="removeMealIngredientRow(${rowCount})">&times;</button>
             `;
             container.appendChild(row);
+
+            const selectEl = row.querySelector('select[name="ingredientId"]');
+            makeSelectSearchableAndPaginated(selectEl);
         }
 
         function removeMealIngredientRow(index) {
@@ -2595,7 +2987,7 @@
             const ing = localIngredientsCache.find(i => i.id === ingredientId);
             if (!ing) return;
 
-            const form = selectEl.parentElement;
+            const form = selectEl.closest('form');
             const unitSelect = form.querySelector('select[name="unit"]');
             
             unitSelect.innerHTML = `<option value="${ing.nutritionBasis.unitId}">${ing.nutritionBasis.unitName}</option>`;
@@ -2747,6 +3139,7 @@
             await loadUnits();
             handleCreateBasisUnitChange();
             await loadIngredients();
+            makeSelectSearchableAndPaginated(document.getElementById('calc-ingredient-id'));
             await loadMealItems();
             await loadMealDefinitions();
             await loadDailyMeals();

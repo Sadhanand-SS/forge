@@ -20,16 +20,18 @@ namespace Forge.Diet.API.Controllers;
 public class IngredientsController : ControllerBase
 {
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<IngredientDto>))]
-    public async Task<ActionResult<List<IngredientDto>>> Get(
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PaginatedListDto<IngredientDto>))]
+    public async Task<ActionResult<PaginatedListDto<IngredientDto>>> Get(
         [FromQuery] string? search,
         [FromQuery] string? brand,
+        [FromQuery] string? cursor,
         [FromServices] SearchIngredientsQueryHandler handler,
-        CancellationToken cancellationToken)
+        [FromQuery] int limit = 20,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            var result = await handler.HandleAsync(new SearchIngredientsQuery(search, brand), cancellationToken);
+            var result = await handler.HandleAsync(new SearchIngredientsQuery(search, brand, cursor, limit), cancellationToken);
             return Ok(result);
         }
         catch (OperationCanceledException)
