@@ -10,4 +10,5 @@ public class DailyMealSummaryDto
     public int SkippedMealCount { get; set; }
     public List<DailyMealDto> Meals { get; set; } = new();
     public NutritionDto TotalNutrition { get; set; } = null!;
+    public DailyGoalDto? DailyGoal { get; set; }
 }

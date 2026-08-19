@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg-gradient: linear-gradient(135deg, #0f172a, #1e1b4b);
@@ -1400,6 +1401,7 @@
             <button class="tab-btn active" onclick="switchTab('ingredients-tab')">Ingredient Database</button>
             <button class="tab-btn" onclick="switchTab('meal-items-tab')">Meal Item Database</button>
             <button class="tab-btn" onclick="switchTab('meal-per-day-tab')">Meals Per Day</button>
+            <button class="tab-btn" onclick="switchTab('diet-plan-tab')">Diet Plan</button>
             <button class="tab-btn" onclick="switchTab('units-tab')">Unit of Measure Manager</button>
             <button class="tab-btn" onclick="switchTab('meals-manager-tab')">Meals Manager</button>
         </div>
@@ -1577,6 +1579,74 @@
                     Loading your meal plan…
                 </div>
             </div>
+
+            <!-- Daily Goal Status Card (bottom of page, full width) -->
+            <div class="card" id="status-card" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+                <div class="card-title">Daily Goal Status</div>
+                <div id="goal-comparison-content">
+                    <div class="result-placeholder">Goals are compared against today's food intake when meals are logged.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DIET PLAN TAB -->
+        <div id="diet-plan-tab" class="tab-content">
+            <div class="daily-planner-header">
+                <h2>Diet Plan & Target Tracker</h2>
+                <div class="daily-date-pill">
+                    <label for="diet-plan-date">Target Date</label>
+                    <input type="date" id="diet-plan-date" required onchange="loadDailyGoalForDietPlanDate(); updateCharts('diet-plan-date');">
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Configure Daily Goals Form Card -->
+                <div class="card">
+                    <div class="card-title">Configure Daily Macro Goals</div>
+                    <form id="daily-goal-form" onsubmit="handleSaveDailyGoal(event)">
+                        <div class="form-group">
+                            <label for="goal-calories">Target Calories (kcal) *</label>
+                            <input type="number" step="any" id="goal-calories" required min="0" placeholder="e.g. 2000">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="goal-protein">Target Protein (g) *</label>
+                                <input type="number" step="any" id="goal-protein" required min="0" placeholder="e.g. 150">
+                            </div>
+                            <div class="form-group">
+                                <label for="goal-carbs">Target Carbs (g) *</label>
+                                <input type="number" step="any" id="goal-carbs" required min="0" placeholder="e.g. 200">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="goal-fat">Target Fat (g) *</label>
+                                <input type="number" step="any" id="goal-fat" required min="0" placeholder="e.g. 70">
+                            </div>
+                            <div class="form-group">
+                                <label for="goal-fiber">Target Fiber (g) *</label>
+                                <input type="number" step="any" id="goal-fiber" required min="0" placeholder="e.g. 25">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn" style="margin-top: 0.5rem;">Save Goal for Date</button>
+                    </form>
+                </div>
+
+                <!-- Macro Chart Card -->
+                <div class="card">
+                    <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; border-bottom:none; padding-bottom:0;">
+                        <span>Intake vs Goal (7 Days)</span>
+                        <div class="subtabs" style="margin-bottom:0; gap:0.25rem;">
+                            <button type="button" class="subtab-btn active" id="chart-toggle-cal" onclick="switchChartType('calories')" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;">Calories</button>
+                            <button type="button" class="subtab-btn" id="chart-toggle-macros" onclick="switchChartType('macros')" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;">Macros</button>
+                        </div>
+                    </div>
+                    <div style="position: relative; height: 260px; width: 100%; margin-top: 1rem;">
+                        <canvas id="macro-history-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
             
             <div class="daily-totals-bar" id="daily-totals-bar" style="display:none;">
                 <div class="totals-label">Day Totals</div>
@@ -1952,6 +2022,12 @@
                 loadMealDefinitions();
                 loadMealItems();
                 loadDailyMeals();
+            } else if (tabId === 'diet-plan-tab') {
+                if (!document.getElementById('diet-plan-date').value) {
+                    document.getElementById('diet-plan-date').value = getTodayIsoDate();
+                }
+                loadDailyGoalForDietPlanDate();
+                updateCharts('diet-plan-date');
             } else if (tabId === 'units-tab') {
                 loadUnits();
                 cancelUnitEdit();
@@ -2011,7 +2087,11 @@
         function formatDecimal(value, digits = 2) {
             const num = Number(value);
             if (!Number.isFinite(num)) return '0';
-            return num.toFixed(digits).replace(/\.?0+$/, '');
+            let str = num.toFixed(digits);
+            if (str.includes('.')) {
+                str = str.replace(/0+$/, '').replace(/\.$/, '');
+            }
+            return str;
         }
 
         function getTodayIsoDate() {
@@ -2629,6 +2709,16 @@
             document.getElementById('totals-fib').textContent  = formatDecimal(summary.totalNutrition.fiber, 1) + 'g';
             document.getElementById('totals-meals').textContent   = summary.mealCount ?? 0;
             document.getElementById('totals-skipped').textContent = summary.skippedMealCount ?? 0;
+
+            if (summary.dailyGoal) {
+                document.getElementById('goal-calories').value = summary.dailyGoal.calories;
+                document.getElementById('goal-protein').value = summary.dailyGoal.protein;
+                document.getElementById('goal-carbs').value = summary.dailyGoal.carbohydrates;
+                document.getElementById('goal-fat').value = summary.dailyGoal.fat;
+                document.getElementById('goal-fiber').value = summary.dailyGoal.fiber;
+
+                renderGoalComparison(summary.totalNutrition, summary.dailyGoal);
+            }
         }
 
         function renderDailyMeals(meals) {
@@ -2741,6 +2831,7 @@
                 localDailyMealsCache = await mealsRes.json();
                 renderDailyMeals(localDailyMealsCache);
                 renderDailySummary(summary);
+                updateCharts().catch(console.error);
             } catch (err) {
                 container.innerHTML = `<div class="empty-state" style="padding:2rem;">Failed to load meals: ${escapeHtml(err.message)}</div>`;
                 showNotification(`Failed to load meals: ${err.message}`, 'error');
@@ -3133,16 +3224,376 @@
             }
         }
 
+        // --- DAILY GOALS & CHARTING LOGIC ---
+        let macroHistoryChartInstance = null;
+        let currentChartType = 'calories';
+
+        async function handleSaveDailyGoal(e) {
+            e.preventDefault();
+            const dateInput = document.getElementById('diet-plan-date');
+            if (!dateInput || !dateInput.value) return;
+
+            const body = {
+                date: dateInput.value,
+                calories: parseFloat(document.getElementById('goal-calories').value),
+                protein: parseFloat(document.getElementById('goal-protein').value),
+                carbohydrates: parseFloat(document.getElementById('goal-carbs').value),
+                fat: parseFloat(document.getElementById('goal-fat').value),
+                fiber: parseFloat(document.getElementById('goal-fiber').value)
+            };
+
+            try {
+                const res = await fetch(`${getApiUrl()}/api/DailyGoals/Upsert`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error(await readErrorMessage(res));
+
+                showNotification("Daily goal saved successfully for this date.", "success");
+                
+                await loadDailyGoalForDietPlanDate();
+                await updateCharts('diet-plan-date');
+                
+                // If log date matches, refresh the summary comparison status in Meals Per Day
+                const logDate = document.getElementById('meal-log-date').value;
+                if (logDate === dateInput.value) {
+                    await loadDailyMeals();
+                }
+            } catch (err) {
+                showNotification(`Failed to save goal: ${err.message}`, 'error');
+            }
+        }
+
+        async function loadDailyGoalForDietPlanDate() {
+            const dateInput = document.getElementById('diet-plan-date');
+            if (!dateInput || !dateInput.value) return;
+
+            try {
+                const res = await fetch(`${getApiUrl()}/api/DailyMeals/GetDailySummary?date=${encodeURIComponent(dateInput.value)}`);
+                if (!res.ok) throw new Error(await readErrorMessage(res));
+                const summary = await res.json();
+
+                if (summary.dailyGoal) {
+                    document.getElementById('goal-calories').value = summary.dailyGoal.calories;
+                    document.getElementById('goal-protein').value = summary.dailyGoal.protein;
+                    document.getElementById('goal-carbs').value = summary.dailyGoal.carbohydrates;
+                    document.getElementById('goal-fat').value = summary.dailyGoal.fat;
+                    document.getElementById('goal-fiber').value = summary.dailyGoal.fiber;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function updateCharts(dateSourceId = 'meal-log-date') {
+            const dateInput = document.getElementById(dateSourceId);
+            if (!dateInput || !dateInput.value) return;
+
+            const endDate = new Date(dateInput.value);
+            const startDate = new Date(endDate);
+            startDate.setDate(endDate.getDate() - 6);
+
+            const formatIsoDate = (d) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            const startStr = formatIsoDate(startDate);
+            const endStr = formatIsoDate(endDate);
+
+            try {
+                const res = await fetch(`${getApiUrl()}/api/DailyGoals/GetRangeSummary?startDate=${startStr}&endDate=${endStr}`);
+                if (!res.ok) throw new Error(await readErrorMessage(res));
+
+                const data = await res.json();
+                renderMacroHistoryChart(data);
+            } catch (err) {
+                console.error(err);
+                showNotification(`Failed to load historical data for charts: ${err.message}`, 'error');
+            }
+        }
+
+        function renderGoalComparison(eaten, goal) {
+            const container = document.getElementById('goal-comparison-content');
+            if (!container) return;
+
+            // Calculations
+            const calPct = goal.calories > 0 ? (eaten.calories / goal.calories) * 100 : 0;
+            const protPct = goal.protein > 0 ? (eaten.protein / goal.protein) * 100 : 0;
+            const carbPct = goal.carbohydrates > 0 ? (eaten.carbohydrates / goal.carbohydrates) * 100 : 0;
+            const fatPct = goal.fat > 0 ? (eaten.fat / goal.fat) * 100 : 0;
+            const fibPct = goal.fiber > 0 ? (eaten.fiber / goal.fiber) * 100 : 0;
+
+            // Status evaluation
+            let statusTitle = "";
+            let statusClass = "";
+            let statusMsg = "";
+
+            const metProtein = protPct >= 90;
+            const withinCal = calPct <= 110;
+            const highCal = calPct > 110;
+            const lowCal = calPct < 85;
+
+            if (metProtein && withinCal) {
+                statusTitle = "Ate Properly! 🎉";
+                statusClass = "color:var(--success);";
+                statusMsg = "Excellent work! You hit your protein target and stayed within your calorie limit today.";
+            } else {
+                statusTitle = "Goal Not Met ⚠️";
+                statusClass = "color:var(--warning);";
+                
+                let issues = [];
+                if (!metProtein) {
+                    issues.push(`short of protein target by ${formatDecimal(goal.protein - eaten.protein, 1)}g`);
+                }
+                if (highCal) {
+                    issues.push(`exceeded calorie target by ${formatDecimal(eaten.calories - goal.calories, 1)} kcal`);
+                }
+                if (lowCal) {
+                    issues.push(`undereating calories by ${formatDecimal(goal.calories - eaten.calories, 1)} kcal`);
+                }
+
+                statusMsg = "You didn't hit your goals perfectly: " + issues.join(", ") + ". Adjust your meals to stay on track.";
+            }
+
+            container.innerHTML = `
+                <div style="margin-bottom:1.25rem;">
+                    <h3 style="font-size:1.25rem; font-weight:700; margin-bottom:0.4rem; ${statusClass}">${statusTitle}</h3>
+                    <p style="font-size:0.85rem; color:var(--text-muted);">${statusMsg}</p>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:0.85rem;">
+                    <!-- Calories Bar -->
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.25rem;">
+                            <span>Calories</span>
+                            <span><strong>${formatDecimal(eaten.calories, 1)}</strong> / ${formatDecimal(goal.calories, 0)} kcal (${formatDecimal(calPct, 0)}%)</span>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.06); height:8px; border-radius:9999px; overflow:hidden;">
+                            <div style="background:${calPct > 110 ? 'var(--danger)' : '#f43f5e'}; width:${Math.min(calPct, 100)}%; height:100%; transition:width 0.4s ease;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Protein Bar -->
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.25rem;">
+                            <span>Protein</span>
+                            <span><strong>${formatDecimal(eaten.protein, 1)}g</strong> / ${formatDecimal(goal.protein, 0)}g (${formatDecimal(protPct, 0)}%)</span>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.06); height:8px; border-radius:9999px; overflow:hidden;">
+                            <div style="background:${protPct >= 90 ? 'var(--success)' : 'var(--warning)'}; width:${Math.min(protPct, 100)}%; height:100%; transition:width 0.4s ease;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Carbs Bar -->
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.25rem;">
+                            <span>Carbohydrates</span>
+                            <span><strong>${formatDecimal(eaten.carbohydrates, 1)}g</strong> / ${formatDecimal(goal.carbohydrates, 0)}g (${formatDecimal(carbPct, 0)}%)</span>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.06); height:8px; border-radius:9999px; overflow:hidden;">
+                            <div style="background:#3b82f6; width:${Math.min(carbPct, 100)}%; height:100%; transition:width 0.4s ease;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Fat Bar -->
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.25rem;">
+                            <span>Fat</span>
+                            <span><strong>${formatDecimal(eaten.fat, 1)}g</strong> / ${formatDecimal(goal.fat, 0)}g (${formatDecimal(fatPct, 0)}%)</span>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.06); height:8px; border-radius:9999px; overflow:hidden;">
+                            <div style="background:#eab308; width:${Math.min(fatPct, 100)}%; height:100%; transition:width 0.4s ease;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Fiber Bar -->
+                    <div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.25rem;">
+                            <span>Fiber</span>
+                            <span><strong>${formatDecimal(eaten.fiber, 1)}g</strong> / ${formatDecimal(goal.fiber, 0)}g (${formatDecimal(fibPct, 0)}%)</span>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.06); height:8px; border-radius:9999px; overflow:hidden;">
+                            <div style="background:#a855f7; width:${Math.min(fibPct, 100)}%; height:100%; transition:width 0.4s ease;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        function renderMacroHistoryChart(data) {
+            const chartCanvas = document.getElementById('macro-history-chart');
+            if (!chartCanvas) return;
+            const ctx = chartCanvas.getContext('2d');
+
+            if (macroHistoryChartInstance) {
+                macroHistoryChartInstance.destroy();
+            }
+
+            const labels = data.map(item => {
+                const d = new Date(item.date);
+                return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            });
+
+            let datasets = [];
+
+            if (currentChartType === 'calories') {
+                datasets = [
+                    {
+                        label: 'Calories Eaten (kcal)',
+                        data: data.map(item => item.eatenCalories),
+                        backgroundColor: 'rgba(244, 63, 94, 0.5)',
+                        borderColor: '#f43f5e',
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        type: 'bar'
+                    },
+                    {
+                        label: 'Calorie Goal (kcal)',
+                        data: data.map(item => item.goal.calories),
+                        borderColor: 'rgba(255, 255, 255, 0.45)',
+                        borderWidth: 2.5,
+                        borderDash: [5, 5],
+                        pointBackgroundColor: '#818cf8',
+                        pointBorderColor: '#fff',
+                        pointRadius: 4,
+                        fill: false,
+                        type: 'line'
+                    }
+                ];
+            } else {
+                datasets = [
+                    {
+                        label: 'Protein Eaten (g)',
+                        data: data.map(item => item.eatenProtein),
+                        backgroundColor: 'rgba(16, 185, 129, 0.55)',
+                        borderColor: '#10b981',
+                        borderWidth: 1.5,
+                        borderRadius: 3,
+                        type: 'bar'
+                    },
+                    {
+                        label: 'Protein Goal (g)',
+                        data: data.map(item => item.goal.protein),
+                        borderColor: '#34d399',
+                        borderWidth: 2,
+                        borderDash: [3, 3],
+                        pointRadius: 3,
+                        fill: false,
+                        type: 'line'
+                    },
+                    {
+                        label: 'Carbs Eaten (g)',
+                        data: data.map(item => item.eatenCarbohydrates),
+                        backgroundColor: 'rgba(59, 130, 246, 0.55)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 1.5,
+                        borderRadius: 3,
+                        type: 'bar'
+                    },
+                    {
+                        label: 'Carbs Goal (g)',
+                        data: data.map(item => item.goal.carbohydrates),
+                        borderColor: '#60a5fa',
+                        borderWidth: 2,
+                        borderDash: [3, 3],
+                        pointRadius: 3,
+                        fill: false,
+                        type: 'line'
+                    },
+                    {
+                        label: 'Fat Eaten (g)',
+                        data: data.map(item => item.eatenFat),
+                        backgroundColor: 'rgba(234, 179, 8, 0.55)',
+                        borderColor: '#eab308',
+                        borderWidth: 1.5,
+                        borderRadius: 3,
+                        type: 'bar'
+                    },
+                    {
+                        label: 'Fat Goal (g)',
+                        data: data.map(item => item.goal.fat),
+                        borderColor: '#fbbf24',
+                        borderWidth: 2,
+                        borderDash: [3, 3],
+                        pointRadius: 3,
+                        fill: false,
+                        type: 'line'
+                    },
+                    {
+                        label: 'Fiber Eaten (g)',
+                        data: data.map(item => item.eatenFiber),
+                        backgroundColor: 'rgba(168, 85, 247, 0.55)',
+                        borderColor: '#a855f7',
+                        borderWidth: 1.5,
+                        borderRadius: 3,
+                        type: 'bar'
+                    },
+                    {
+                        label: 'Fiber Goal (g)',
+                        data: data.map(item => item.goal.fiber),
+                        borderColor: '#c084fc',
+                        borderWidth: 2,
+                        borderDash: [3, 3],
+                        pointRadius: 3,
+                        fill: false,
+                        type: 'line'
+                    }
+                ];
+            }
+
+            macroHistoryChartInstance = new Chart(ctx, {
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#94a3b8',
+                                font: { family: 'Inter', size: 10 }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                            ticks: { color: '#94a3b8', font: { family: 'Inter', size: 10 } }
+                        },
+                        y: {
+                            min: 0,
+                            grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                            ticks: { color: '#94a3b8', font: { family: 'Inter', size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function switchChartType(type) {
+            currentChartType = type;
+            document.getElementById('chart-toggle-cal').classList.toggle('active', type === 'calories');
+            document.getElementById('chart-toggle-macros').classList.toggle('active', type === 'macros');
+            updateCharts().catch(console.error);
+        }
+
         // Initial Load
         window.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('meal-log-date').value = getTodayIsoDate();
+            await loadDailyMeals(); // loadDailyMeals calls updateCharts automatically
             await loadUnits();
             handleCreateBasisUnitChange();
             await loadIngredients();
             makeSelectSearchableAndPaginated(document.getElementById('calc-ingredient-id'));
             await loadMealItems();
             await loadMealDefinitions();
-            await loadDailyMeals();
             resetMealItemForm();
             cancelMealDefinitionEdit();
         });

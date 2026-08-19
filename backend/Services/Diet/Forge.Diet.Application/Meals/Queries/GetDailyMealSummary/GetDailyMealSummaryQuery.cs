@@ -30,6 +30,33 @@ public class GetDailyMealSummaryQueryHandler
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
-        return meals.ToDailySummaryDto(query.Date);
+        var dailyGoal = await _context.DailyGoals
+            .Where(dg => dg.Date <= query.Date)
+            .OrderByDescending(dg => dg.Date)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var goalDto = dailyGoal != null ? new DailyGoalDto
+        {
+            Id = dailyGoal.Id,
+            Date = dailyGoal.Date,
+            Calories = dailyGoal.Calories,
+            Protein = dailyGoal.Protein,
+            Carbohydrates = dailyGoal.Carbohydrates,
+            Fat = dailyGoal.Fat,
+            Fiber = dailyGoal.Fiber
+        } : new DailyGoalDto
+        {
+            Id = Guid.Empty,
+            Date = query.Date,
+            Calories = 2000,
+            Protein = 150,
+            Carbohydrates = 200,
+            Fat = 70,
+            Fiber = 25
+        };
+
+        var summary = meals.ToDailySummaryDto(query.Date);
+        summary.DailyGoal = goalDto;
+        return summary;
     }
 }

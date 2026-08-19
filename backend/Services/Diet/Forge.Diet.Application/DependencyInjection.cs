@@ -28,6 +28,8 @@ using Forge.Diet.Application.CustomUnits.Commands.CreateCustomUnit;
 using Forge.Diet.Application.CustomUnits.Commands.UpdateCustomUnit;
 using Forge.Diet.Application.CustomUnits.Commands.DeleteCustomUnit;
 using Forge.Diet.Application.CustomUnits.Queries.GetCustomUnits;
+using Forge.Diet.Application.DailyGoals.Commands.UpsertDailyGoal;
+using Forge.Diet.Application.DailyGoals.Queries.GetDailyGoalRange;
 
 namespace Forge.Diet.Application;
 
@@ -72,6 +74,10 @@ public static class DependencyInjection
         services.AddScoped<UpdateCustomUnitCommandHandler>();
         services.AddScoped<DeleteCustomUnitCommandHandler>();
         services.AddScoped<GetCustomUnitsQueryHandler>();
+
+        // DailyGoal Handlers
+        services.AddScoped<UpsertDailyGoalCommandHandler>();
+        services.AddScoped<GetDailyGoalRangeQueryHandler>();
 
         return services;
     }
