@@ -18,7 +18,7 @@ public class CreateMealCommandHandler
     {
         var meal = new Meal(Guid.NewGuid(), command.Name, command.Time, isSystem: false);
         _context.Meals.Add(meal);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(CancellationToken.None);
 
         return meal.Id;
     }

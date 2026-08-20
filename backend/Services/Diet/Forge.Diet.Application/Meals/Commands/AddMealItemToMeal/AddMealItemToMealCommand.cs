@@ -26,6 +26,8 @@ public class AddMealItemToMealCommandHandler
         }
 
         var mealItem = await _context.MealItems
+            .Include(mi => mi.Ingredients)
+                .ThenInclude(mi => mi.Ingredient)
             .FirstOrDefaultAsync(item => item.Id == command.MealItemId, cancellationToken);
 
         if (mealItem == null)
@@ -35,7 +37,7 @@ public class AddMealItemToMealCommandHandler
 
         var mealMealItem = meal.AddMealItem(mealItem, command.Servings);
         _context.DailyMealMealItems.Add(mealMealItem);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(CancellationToken.None);
 
         return mealMealItem.Id;
     }

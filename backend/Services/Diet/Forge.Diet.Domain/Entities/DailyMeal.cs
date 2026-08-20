@@ -93,7 +93,7 @@ public class DailyMeal
                 continue;
             }
 
-            var itemNutrition = mealMealItem.MealItem.GetTotalNutrition();
+            var itemNutrition = mealMealItem.GetTotalNutrition();
             calories += itemNutrition.Calories * mealMealItem.Servings;
             protein += itemNutrition.Protein * mealMealItem.Servings;
             carbohydrates += itemNutrition.Carbohydrates * mealMealItem.Servings;

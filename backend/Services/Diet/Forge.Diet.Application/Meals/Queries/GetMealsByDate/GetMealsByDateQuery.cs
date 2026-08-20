@@ -22,6 +22,10 @@ public class GetMealsByDateQueryHandler
         // calls first. Calling Ensure from both endpoints in parallel causes a
         // duplicate-key race that rolls back the entire insert batch in both
         // transactions, leaving DailyMeals empty for the requested date.
+
+        // NOTE: CancellationToken.None is intentional. See GetDailyMealSummaryQuery for reasoning.
+        var ct = CancellationToken.None;
+
         var meals = await _context.DailyMeals
             .Where(m => m.Date == query.Date)
             .Include(m => m.Meal)
@@ -30,11 +34,19 @@ public class GetMealsByDateQueryHandler
                     .ThenInclude(mealItem => mealItem.Ingredients)
                         .ThenInclude(ingredient => ingredient.Ingredient)
                             .ThenInclude(ingredient => ingredient.Conversions)
+            .Include(m => m.MealItems)
+                .ThenInclude(item => item.Ingredients)
+                    .ThenInclude(ingredient => ingredient.Ingredient)
+                        .ThenInclude(ingredient => ingredient.Conversions)
             .AsNoTracking()
             .OrderBy(m => m.Meal.Time)
             .ThenBy(m => m.Meal.Name)
-            .ToListAsync(cancellationToken);
+            .ToListAsync(ct);
 
-        return meals.Select(meal => meal.ToDto()).ToList();
+        var units = await _context.UnitsOfMeasure
+            .AsNoTracking()
+            .ToDictionaryAsync(u => u.Id, u => u.Name, ct);
+
+        return meals.Select(meal => meal.ToDto(units)).ToList();
     }
 }

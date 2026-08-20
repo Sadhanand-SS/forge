@@ -24,6 +24,6 @@ public class UpdateMealCommandHandler
         }
 
         meal.Update(command.Name, command.Time);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(CancellationToken.None);
     }
 }

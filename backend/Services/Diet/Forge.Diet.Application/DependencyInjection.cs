@@ -19,6 +19,7 @@ using Forge.Diet.Application.Meals.Commands.DeleteMeal;
 using Forge.Diet.Application.Meals.Commands.RemoveMealItemFromMeal;
 using Forge.Diet.Application.Meals.Commands.SetDailyMealSkipped;
 using Forge.Diet.Application.Meals.Commands.UpdateMeal;
+using Forge.Diet.Application.Meals.Commands.UpdateDailyMealItemIngredients;
 using Forge.Diet.Application.Meals.Commands.UpdateMealMealItemServings;
 using Forge.Diet.Application.Meals.Queries.GetDailyMealSummary;
 using Forge.Diet.Application.Meals.Queries.GetMeal;
@@ -64,6 +65,7 @@ public static class DependencyInjection
         services.AddScoped<UpdateMealMealItemServingsCommandHandler>();
         services.AddScoped<RemoveMealItemFromMealCommandHandler>();
         services.AddScoped<SetDailyMealSkippedCommandHandler>();
+        services.AddScoped<UpdateDailyMealItemIngredientsCommandHandler>();
         services.AddScoped<GetMealQueryHandler>();
         services.AddScoped<GetMealsQueryHandler>();
         services.AddScoped<GetMealsByDateQueryHandler>();

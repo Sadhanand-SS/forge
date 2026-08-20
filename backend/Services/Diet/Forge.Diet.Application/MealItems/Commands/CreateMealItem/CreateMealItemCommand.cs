@@ -55,7 +55,7 @@ public class CreateMealItemCommandHandler
         }
 
         _context.MealItems.Add(mealItem);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(CancellationToken.None);
 
         return mealItem.Id;
     }

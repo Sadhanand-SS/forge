@@ -38,6 +38,6 @@ public class RemoveIngredientFromMealItemCommandHandler
 
         mealItem.RemoveIngredient(command.MealIngredientId);
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(CancellationToken.None);
     }
 }

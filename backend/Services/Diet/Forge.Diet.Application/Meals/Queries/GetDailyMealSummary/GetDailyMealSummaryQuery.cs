@@ -17,7 +17,14 @@ public class GetDailyMealSummaryQueryHandler
 
     public async Task<DailyMealSummaryDto> HandleAsync(GetDailyMealSummaryQuery query, CancellationToken cancellationToken = default)
     {
-        await DailyMealsService.EnsureDailyMealsForDateAsync(_context, query.Date, cancellationToken);
+        // NOTE: CancellationToken.None is intentional on all DB calls below.
+        // The HTTP request CancellationToken is cancelled whenever the browser refreshes
+        // or navigates away. Propagating it to Npgsql causes OperationCanceledException
+        // to bubble up through the entire stack. Since these are fast read queries against
+        // a remote DB (Supabase), we let them complete regardless of client cancellation.
+        var ct = CancellationToken.None;
+
+        await DailyMealsService.EnsureDailyMealsForDateAsync(_context, query.Date, ct);
 
         var meals = await _context.DailyMeals
             .Where(m => m.Date == query.Date)
@@ -27,13 +34,17 @@ public class GetDailyMealSummaryQueryHandler
                     .ThenInclude(mealItem => mealItem.Ingredients)
                         .ThenInclude(ingredient => ingredient.Ingredient)
                             .ThenInclude(ingredient => ingredient.Conversions)
+            .Include(m => m.MealItems)
+                .ThenInclude(item => item.Ingredients)
+                    .ThenInclude(ingredient => ingredient.Ingredient)
+                        .ThenInclude(ingredient => ingredient.Conversions)
             .AsNoTracking()
-            .ToListAsync(cancellationToken);
+            .ToListAsync(ct);
 
         var dailyGoal = await _context.DailyGoals
             .Where(dg => dg.Date <= query.Date)
             .OrderByDescending(dg => dg.Date)
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync(ct);
 
         var goalDto = dailyGoal != null ? new DailyGoalDto
         {
@@ -55,7 +66,11 @@ public class GetDailyMealSummaryQueryHandler
             Fiber = 25
         };
 
-        var summary = meals.ToDailySummaryDto(query.Date);
+        var units = await _context.UnitsOfMeasure
+            .AsNoTracking()
+            .ToDictionaryAsync(u => u.Id, u => u.Name, ct);
+
+        var summary = meals.ToDailySummaryDto(query.Date, units);
         summary.DailyGoal = goalDto;
         return summary;
     }

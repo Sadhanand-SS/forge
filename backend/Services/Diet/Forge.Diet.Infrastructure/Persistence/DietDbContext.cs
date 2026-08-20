@@ -19,6 +19,7 @@ public class DietDbContext : DbContext, IDietDbContext
     public DbSet<Meal> Meals => Set<Meal>();
     public DbSet<DailyMeal> DailyMeals => Set<DailyMeal>();
     public DbSet<DailyMealMealItem> DailyMealMealItems => Set<DailyMealMealItem>();
+    public DbSet<DailyMealMealItemIngredient> DailyMealMealItemIngredients => Set<DailyMealMealItemIngredient>();
     public DbSet<DailyGoal> DailyGoals => Set<DailyGoal>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

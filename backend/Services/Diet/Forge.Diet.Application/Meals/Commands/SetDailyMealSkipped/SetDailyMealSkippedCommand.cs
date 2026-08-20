@@ -25,6 +25,6 @@ public class SetDailyMealSkippedCommandHandler
         }
 
         dailyMeal.SetSkipped(command.IsSkipped);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(CancellationToken.None);
     }
 }

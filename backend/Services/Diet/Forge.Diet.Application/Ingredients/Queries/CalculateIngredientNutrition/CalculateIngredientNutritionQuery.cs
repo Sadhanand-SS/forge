@@ -41,7 +41,7 @@ public class CalculateIngredientNutritionQueryHandler
 
         var units = await _context.UnitsOfMeasure
             .AsNoTracking()
-            .ToDictionaryAsync(u => u.Id, u => u.Name, cancellationToken);
+            .ToDictionaryAsync(u => u.Id, u => u.Name, CancellationToken.None);
 
         if (!units.TryGetValue(query.UnitId, out var requestedUnitName))
         {

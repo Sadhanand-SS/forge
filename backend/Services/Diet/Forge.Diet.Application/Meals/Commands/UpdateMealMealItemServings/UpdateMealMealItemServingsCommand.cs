@@ -25,6 +25,6 @@ public class UpdateMealMealItemServingsCommandHandler
         }
 
         mealMealItem.UpdateServings(command.Servings);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(CancellationToken.None);
     }
 }

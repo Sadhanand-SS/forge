@@ -38,7 +38,7 @@ public class UpsertDailyGoalCommandHandler
                 command.Fat,
                 command.Fiber);
 
-            await _context.SaveChangesAsync(cancellationToken);
+            await _context.SaveChangesAsync(CancellationToken.None);
             return existingGoal.Id;
         }
 
@@ -52,7 +52,7 @@ public class UpsertDailyGoalCommandHandler
             command.Fiber);
 
         await _context.DailyGoals.AddAsync(newGoal, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(CancellationToken.None);
         return newGoal.Id;
     }
 }

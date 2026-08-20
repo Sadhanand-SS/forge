@@ -47,7 +47,7 @@ public class AddIngredientToMealItemCommandHandler
 
         _context.MealIngredients.Add(mealIngredient);
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(CancellationToken.None);
 
         return mealIngredient.Id;
     }

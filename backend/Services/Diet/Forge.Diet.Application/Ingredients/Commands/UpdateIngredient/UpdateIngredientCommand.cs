@@ -64,6 +64,6 @@ public class UpdateIngredientCommandHandler
             _context.IngredientConversions.Add(conv);
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(CancellationToken.None);
     }
 }

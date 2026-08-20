@@ -3,10 +3,12 @@ using Forge.Diet.Application.Meals.Commands.AddMealItemToMeal;
 using Forge.Diet.Application.Meals.Commands.RemoveMealItemFromMeal;
 using Forge.Diet.Application.Meals.Commands.SetDailyMealSkipped;
 using Forge.Diet.Application.Meals.Commands.UpdateMealMealItemServings;
+using Forge.Diet.Application.Meals.Commands.UpdateDailyMealItemIngredients;
 using Forge.Diet.Application.Meals.Queries.GetDailyMealSummary;
 using Forge.Diet.Application.Meals.Queries.GetMealsByDate;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 
 namespace Forge.Diet.API.Controllers;
 
@@ -132,6 +134,55 @@ public class DailyMealsController : ControllerBase
             return NotFound(ex.Message);
         }
     }
+
+    [HttpPut("{dailyMealId:guid}/items/{mealMealItemId:guid}/ingredients")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateMealItemIngredients(
+        Guid dailyMealId,
+        Guid mealMealItemId,
+        [FromBody] UpdateDailyMealItemIngredientsRequest request,
+        [FromServices] UpdateDailyMealItemIngredientsCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var commandIngredients = request.Ingredients.Select(i => 
+                new UpdateDailyMealItemIngredientItemDto(i.Id, i.Quantity, i.UnitId)
+            ).ToList();
+
+            await handler.HandleAsync(
+                new UpdateDailyMealItemIngredientsCommand(dailyMealId, mealMealItemId, commandIngredients),
+                cancellationToken);
+
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+}
+
+public class UpdateDailyMealItemIngredientsRequest
+{
+    public List<UpdateDailyMealItemIngredientItem> Ingredients { get; set; } = new();
+}
+
+public class UpdateDailyMealItemIngredientItem
+{
+    public Guid Id { get; set; }
+    public decimal Quantity { get; set; }
+    public Guid UnitId { get; set; }
 }
 
 public class AddMealMealItemRequest

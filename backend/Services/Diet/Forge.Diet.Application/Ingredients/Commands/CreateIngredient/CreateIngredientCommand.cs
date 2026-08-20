@@ -59,7 +59,7 @@ public class CreateIngredientCommandHandler
         }
 
         _context.Ingredients.Add(ingredient);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(CancellationToken.None);
 
         return ingredient.Id;
     }
