@@ -10,6 +10,7 @@ using Forge.Diet.Application.MealItems.Commands.UpdateMealItem;
 using Forge.Diet.Application.MealItems.Commands.DeleteMealItem;
 using Forge.Diet.Application.MealItems.Commands.AddIngredientToMealItem;
 using Forge.Diet.Application.MealItems.Commands.RemoveIngredientFromMealItem;
+using Forge.Diet.Application.MealItems.Commands.UpdateMealIngredient;
 using Forge.Diet.Application.MealItems.Queries.GetMealItem;
 using Forge.Diet.Application.MealItems.Queries.GetMealItems;
 
@@ -208,11 +209,52 @@ public class MealItemsController : ControllerBase
             return StatusCode(499);
         }
     }
+
+    [HttpPut("{mealItemId:guid}/ingredients/{mealIngredientId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateIngredient(
+        Guid mealItemId,
+        Guid mealIngredientId,
+        [FromBody] UpdateMealIngredientRequest request,
+        [FromServices] UpdateMealIngredientCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var command = new UpdateMealIngredientCommand(mealItemId, mealIngredientId, request.Quantity, request.UnitId);
+            await handler.HandleAsync(command, cancellationToken);
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(499);
+        }
+    }
 }
 
 public class AddMealIngredientRequest
 {
     public Guid IngredientId { get; set; }
+    public decimal Quantity { get; set; }
+    public Guid UnitId { get; set; }
+}
+
+public class UpdateMealIngredientRequest
+{
     public decimal Quantity { get; set; }
     public Guid UnitId { get; set; }
 }

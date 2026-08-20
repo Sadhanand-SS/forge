@@ -52,14 +52,16 @@ public class DailyMeal
         IsSkipped = isSkipped;
     }
 
-    public DailyMealMealItem AddMealItem(MealItem mealItem, decimal servings)
+    public DailyMealMealItem AddMealItem(MealItem mealItem, decimal servings,
+        bool isPacked = false, decimal? totalCookedWeight = null, decimal? packedWeight = null)
     {
         if (mealItem == null)
         {
             throw new ArgumentNullException(nameof(mealItem));
         }
 
-        var dailyMealMealItem = new DailyMealMealItem(Guid.NewGuid(), mealItem, servings);
+        var dailyMealMealItem = new DailyMealMealItem(Guid.NewGuid(), mealItem, servings,
+            isPacked, totalCookedWeight, packedWeight);
         MealItems.Add(dailyMealMealItem);
         return dailyMealMealItem;
     }
@@ -94,11 +96,12 @@ public class DailyMeal
             }
 
             var itemNutrition = mealMealItem.GetTotalNutrition();
-            calories += itemNutrition.Calories * mealMealItem.Servings;
-            protein += itemNutrition.Protein * mealMealItem.Servings;
-            carbohydrates += itemNutrition.Carbohydrates * mealMealItem.Servings;
-            fat += itemNutrition.Fat * mealMealItem.Servings;
-            fiber += itemNutrition.Fiber * mealMealItem.Servings;
+            var multiplier = mealMealItem.GetNutritionMultiplier();
+            calories += itemNutrition.Calories * multiplier;
+            protein += itemNutrition.Protein * multiplier;
+            carbohydrates += itemNutrition.Carbohydrates * multiplier;
+            fat += itemNutrition.Fat * multiplier;
+            fiber += itemNutrition.Fiber * multiplier;
         }
 
         return Nutrition.Create(calories, protein, carbohydrates, fat, fiber);

@@ -2,8 +2,9 @@ using Forge.Diet.Application.DTOs;
 using Forge.Diet.Application.Meals.Commands.AddMealItemToMeal;
 using Forge.Diet.Application.Meals.Commands.RemoveMealItemFromMeal;
 using Forge.Diet.Application.Meals.Commands.SetDailyMealSkipped;
-using Forge.Diet.Application.Meals.Commands.UpdateMealMealItemServings;
 using Forge.Diet.Application.Meals.Commands.UpdateDailyMealItemIngredients;
+using Forge.Diet.Application.Meals.Commands.UpdateDailyMealItemPackedMode;
+using Forge.Diet.Application.Meals.Commands.UpdateMealMealItemServings;
 using Forge.Diet.Application.Meals.Queries.GetDailyMealSummary;
 using Forge.Diet.Application.Meals.Queries.GetMealsByDate;
 using Microsoft.AspNetCore.Http;
@@ -71,7 +72,13 @@ public class DailyMealsController : ControllerBase
         try
         {
             var id = await handler.HandleAsync(
-                new AddMealItemToMealCommand(dailyMealId, request.MealItemId, request.Servings),
+                new AddMealItemToMealCommand(
+                    dailyMealId,
+                    request.MealItemId,
+                    request.Servings,
+                    request.IsPacked,
+                    request.TotalCookedWeight,
+                    request.PackedWeight),
                 cancellationToken);
 
             return CreatedAtAction(nameof(GetByDate), new { id = dailyMealId }, id);
@@ -81,6 +88,10 @@ public class DailyMealsController : ControllerBase
             return NotFound(ex.Message);
         }
         catch (ArgumentOutOfRangeException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ArgumentException ex)
         {
             return BadRequest(ex.Message);
         }
@@ -110,6 +121,40 @@ public class DailyMealsController : ControllerBase
             return NotFound(ex.Message);
         }
         catch (ArgumentOutOfRangeException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPut("{dailyMealId:guid}/items/{mealMealItemId:guid}/packed")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateMealItemPackedMode(
+        Guid dailyMealId,
+        Guid mealMealItemId,
+        [FromBody] UpdateMealItemPackedModeRequest request,
+        [FromServices] UpdateDailyMealItemPackedModeCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await handler.HandleAsync(
+                new UpdateDailyMealItemPackedModeCommand(
+                    dailyMealId,
+                    mealMealItemId,
+                    request.IsPacked,
+                    request.TotalCookedWeight,
+                    request.PackedWeight),
+                cancellationToken);
+
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (ArgumentException ex)
         {
             return BadRequest(ex.Message);
         }
@@ -188,7 +233,10 @@ public class UpdateDailyMealItemIngredientItem
 public class AddMealMealItemRequest
 {
     public Guid MealItemId { get; set; }
-    public decimal Servings { get; set; }
+    public decimal Servings { get; set; } = 1;
+    public bool IsPacked { get; set; } = false;
+    public decimal? TotalCookedWeight { get; set; }
+    public decimal? PackedWeight { get; set; }
 }
 
 public class UpdateMealMealItemServingsRequest
@@ -199,4 +247,11 @@ public class UpdateMealMealItemServingsRequest
 public class SetDailyMealSkippedRequest
 {
     public bool IsSkipped { get; set; }
+}
+
+public class UpdateMealItemPackedModeRequest
+{
+    public bool IsPacked { get; set; }
+    public decimal? TotalCookedWeight { get; set; }
+    public decimal? PackedWeight { get; set; }
 }

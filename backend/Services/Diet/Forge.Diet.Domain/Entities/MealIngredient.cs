@@ -37,4 +37,20 @@ public class MealIngredient
         Quantity = quantity;
         UnitId = unitId;
     }
+
+    public void UpdateQuantityAndUnit(decimal quantity, Guid unitId)
+    {
+        if (quantity <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be greater than zero.");
+        }
+
+        if (unitId == Guid.Empty)
+        {
+            throw new ArgumentException("Unit ID cannot be empty.", nameof(unitId));
+        }
+
+        Quantity = quantity;
+        UnitId = unitId;
+    }
 }

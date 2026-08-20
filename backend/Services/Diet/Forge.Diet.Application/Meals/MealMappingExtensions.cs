@@ -36,6 +36,13 @@ internal static class MealMappingExtensions
             MealItems = meal.MealItems.Select(item =>
             {
                 var itemNutrition = item.GetTotalNutrition();
+                var multiplier = item.GetNutritionMultiplier();
+
+                decimal? portionPercent = null;
+                if (item.IsPacked && item.TotalCookedWeight.HasValue && item.TotalCookedWeight.Value > 0 && item.PackedWeight.HasValue)
+                {
+                    portionPercent = (item.PackedWeight.Value / item.TotalCookedWeight.Value) * 100m;
+                }
 
                 return new MealMealItemDto
                 {
@@ -43,7 +50,12 @@ internal static class MealMappingExtensions
                     MealItemId = item.MealItemId,
                     MealItemName = item.MealItem.Name,
                     Servings = item.Servings,
-                    TotalNutrition = itemNutrition.Scale(item.Servings).ToDto(),
+                    IsPacked = item.IsPacked,
+                    TotalCookedWeight = item.TotalCookedWeight,
+                    PackedWeight = item.PackedWeight,
+                    TotalIngredientWeight = item.GetTotalIngredientWeight(),
+                    PortionPercent = portionPercent,
+                    TotalNutrition = itemNutrition.Scale(multiplier).ToDto(),
                     Ingredients = item.Ingredients.Select(ing =>
                     {
                         var compatibleUnits = new List<UnitOfMeasureDto>();

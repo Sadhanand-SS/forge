@@ -47,14 +47,43 @@ public class GetMealItemQueryHandler
             Id = mealItem.Id,
             Name = mealItem.Name,
             Description = mealItem.Description,
-            Ingredients = mealItem.Ingredients.Select(item => new MealIngredientDto
+            Ingredients = mealItem.Ingredients.Select(item =>
             {
-                Id = item.Id,
-                IngredientId = item.IngredientId,
-                IngredientName = item.Ingredient.Name,
-                Quantity = item.Quantity,
-                UnitId = item.UnitId,
-                UnitName = getUnitName(item.UnitId)
+                var compatibleUnits = new List<UnitOfMeasureDto>
+                {
+                    new UnitOfMeasureDto
+                    {
+                        Id = item.Ingredient.NutritionBasis.UnitId,
+                        Name = getUnitName(item.Ingredient.NutritionBasis.UnitId),
+                        Description = string.Empty,
+                        IsSystem = false
+                    }
+                };
+
+                if (item.Ingredient.Conversions != null)
+                {
+                    foreach (var conv in item.Ingredient.Conversions)
+                    {
+                        compatibleUnits.Add(new UnitOfMeasureDto
+                        {
+                            Id = conv.TargetUnitId,
+                            Name = getUnitName(conv.TargetUnitId),
+                            Description = string.Empty,
+                            IsSystem = false
+                        });
+                    }
+                }
+
+                return new MealIngredientDto
+                {
+                    Id = item.Id,
+                    IngredientId = item.IngredientId,
+                    IngredientName = item.Ingredient.Name,
+                    Quantity = item.Quantity,
+                    UnitId = item.UnitId,
+                    UnitName = getUnitName(item.UnitId),
+                    CompatibleUnits = compatibleUnits
+                };
             }).ToList(),
             TotalNutrition = new NutritionDto
             {

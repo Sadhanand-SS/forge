@@ -3,7 +3,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Forge.Diet.Application.Meals.Commands.AddMealItemToMeal;
 
-public record AddMealItemToMealCommand(Guid MealId, Guid MealItemId, decimal Servings);
+public record AddMealItemToMealCommand(
+    Guid MealId,
+    Guid MealItemId,
+    decimal Servings,
+    bool IsPacked = false,
+    decimal? TotalCookedWeight = null,
+    decimal? PackedWeight = null);
 
 public class AddMealItemToMealCommandHandler
 {
@@ -18,7 +24,7 @@ public class AddMealItemToMealCommandHandler
     {
         var meal = await _context.DailyMeals
             .Include(m => m.MealItems)
-            .FirstOrDefaultAsync(m => m.Id == command.MealId, cancellationToken);
+            .FirstOrDefaultAsync(m => m.Id == command.MealId, CancellationToken.None);
 
         if (meal == null)
         {
@@ -28,14 +34,20 @@ public class AddMealItemToMealCommandHandler
         var mealItem = await _context.MealItems
             .Include(mi => mi.Ingredients)
                 .ThenInclude(mi => mi.Ingredient)
-            .FirstOrDefaultAsync(item => item.Id == command.MealItemId, cancellationToken);
+            .FirstOrDefaultAsync(item => item.Id == command.MealItemId, CancellationToken.None);
 
         if (mealItem == null)
         {
             throw new KeyNotFoundException($"Meal item with ID '{command.MealItemId}' was not found.");
         }
 
-        var mealMealItem = meal.AddMealItem(mealItem, command.Servings);
+        var mealMealItem = meal.AddMealItem(
+            mealItem,
+            command.Servings,
+            command.IsPacked,
+            command.TotalCookedWeight,
+            command.PackedWeight);
+
         _context.DailyMealMealItems.Add(mealMealItem);
         await _context.SaveChangesAsync(CancellationToken.None);
 

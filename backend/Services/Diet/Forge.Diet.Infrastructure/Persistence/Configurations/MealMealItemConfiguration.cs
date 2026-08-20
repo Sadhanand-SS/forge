@@ -16,6 +16,18 @@ public class MealMealItemConfiguration : IEntityTypeConfiguration<DailyMealMealI
             .HasPrecision(18, 4)
             .IsRequired();
 
+        builder.Property(item => item.IsPacked)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(item => item.TotalCookedWeight)
+            .HasPrecision(18, 4)
+            .IsRequired(false);
+
+        builder.Property(item => item.PackedWeight)
+            .HasPrecision(18, 4)
+            .IsRequired(false);
+
         builder.HasOne(item => item.DailyMeal)
             .WithMany(meal => meal.MealItems)
             .HasForeignKey(item => item.DailyMealId)
