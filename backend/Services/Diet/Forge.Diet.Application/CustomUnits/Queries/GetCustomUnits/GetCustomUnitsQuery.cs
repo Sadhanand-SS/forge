@@ -25,7 +25,7 @@ public class GetCustomUnitsQueryHandler
             .AsNoTracking()
             .OrderByDescending(u => u.IsSystem)
             .ThenBy(u => u.Name)
-            .ToListAsync(cancellationToken);
+            .ToListAsync(CancellationToken.None);
 
         return list.Select(u => new UnitOfMeasureDto
         {

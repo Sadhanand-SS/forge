@@ -15,6 +15,7 @@ public interface IDietDbContext
     DbSet<Meal> Meals { get; }
     DbSet<DailyMeal> DailyMeals { get; }
     DbSet<DailyMealMealItem> DailyMealMealItems { get; }
+    DbSet<DailyMealMealItemIngredient> DailyMealMealItemIngredients { get; }
     DbSet<DailyGoal> DailyGoals { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

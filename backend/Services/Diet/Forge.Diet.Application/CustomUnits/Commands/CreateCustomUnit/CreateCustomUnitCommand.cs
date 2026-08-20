@@ -26,7 +26,7 @@ public class CreateCustomUnitCommandHandler
 
         var unit = new UnitOfMeasure(Guid.NewGuid(), command.Name, command.Description, isSystem: false);
         _context.UnitsOfMeasure.Add(unit);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(CancellationToken.None);
 
         return unit.Id;
     }

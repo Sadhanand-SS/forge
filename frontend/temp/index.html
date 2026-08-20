@@ -2739,25 +2739,68 @@
 
                 const mealItemsHtml = meal.mealItems.length === 0
                     ? `<div class="empty-state" style="padding:0.75rem 0;">No food logged yet — add a meal item below.</div>`
-                    : meal.mealItems.map(item => `
-                        <div class="daily-item-row">
-                            <div class="daily-item-info">
-                                <strong>${escapeHtml(item.mealItemName)}</strong>
-                                <div class="nutrition-badges" style="margin-top:0.3rem;">
-                                    <div class="badge badge-cal">Cal <strong>${formatDecimal(item.totalNutrition.calories, 1)}</strong></div>
-                                    <div class="badge badge-prot">P <strong>${formatDecimal(item.totalNutrition.protein, 1)}g</strong></div>
-                                    <div class="badge badge-carb">C <strong>${formatDecimal(item.totalNutrition.carbohydrates, 1)}g</strong></div>
-                                    <div class="badge badge-fat">F <strong>${formatDecimal(item.totalNutrition.fat, 1)}g</strong></div>
-                                    <div class="badge badge-fib">Fib <strong>${formatDecimal(item.totalNutrition.fiber, 1)}g</strong></div>
+                    : meal.mealItems.map(item => {
+                        const ingredientsHtml = (item.ingredients && item.ingredients.length > 0)
+                            ? `
+                            <div class="ingredients-panel" id="ingredients-panel-${item.id}" style="display:none; padding: 1rem; background: rgba(15, 23, 42, 0.35); border-radius: 0.5rem; margin-top: 0.5rem; border: 1px solid var(--card-border);">
+                                <h4 style="font-size: 0.85rem; margin-bottom: 0.75rem; color: var(--text-main); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Adjust Ingredient Quantities</h4>
+                                <div class="ingredients-adjust-list" style="display:flex; flex-direction:column; gap:0.5rem;">
+                                    ${item.ingredients.map(ing => {
+                                        const unitOptions = ing.compatibleUnits.map(u => 
+                                            `<option value="${u.id}" ${u.id === ing.unitId ? 'selected' : ''}>${escapeHtml(u.name)}</option>`
+                                        ).join('');
+
+                                        return `
+                                            <div class="ingredient-adjust-row" data-id="${ing.id}" style="display:flex; align-items:center; gap:0.5rem; justify-content:space-between;">
+                                                <span style="font-size:0.85rem; color:var(--text-muted); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${escapeHtml(ing.ingredientName)}">
+                                                    ${escapeHtml(ing.ingredientName)}
+                                                </span>
+                                                <div style="display:flex; gap:0.35rem; align-items:center;">
+                                                    <input type="number" name="quantity" step="any" min="0.01" value="${formatDecimal(ing.quantity, 2)}" style="width:80px; padding:0.35rem 0.5rem; font-size:0.8rem; border-radius:0.375rem; border:1px solid var(--card-border); background:var(--input-bg); color:var(--text-main);">
+                                                    <select name="unit" style="width:100px; padding:0.35rem 0.5rem; font-size:0.8rem; border-radius:0.375rem; border:1px solid var(--card-border); background:var(--input-bg); color:var(--text-main);">
+                                                        ${unitOptions}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem;">
+                                    <button type="button" class="btn btn-secondary" style="width:auto; padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="toggleIngredientsPanel('${item.id}')">Cancel</button>
+                                    <button type="button" class="btn" style="width:auto; padding:0.4rem 0.8rem; font-size:0.8rem; background: var(--accent-primary);" onclick="saveMealItemIngredients('${meal.id}', '${item.id}')">Save Adjustments</button>
                                 </div>
                             </div>
-                            <div class="daily-item-controls">
-                                <input type="number" min="0.1" step="0.1" value="${formatDecimal(item.servings, 2)}" id="servings-${item.id}" style="width:80px;" title="Servings">
-                                <button type="button" class="btn btn-secondary" style="width:auto; padding:0.5rem 0.7rem; font-size:0.8rem;" onclick="updateDailyMealItemServings('${meal.id}', '${item.id}')">Save</button>
-                                <button type="button" class="btn btn-danger btn-icon" onclick="removeDailyMealItem('${meal.id}', '${item.id}')" title="Remove">&times;</button>
+                            `
+                            : '';
+
+                        const adjustBtn = (item.ingredients && item.ingredients.length > 0)
+                            ? `<button type="button" class="btn btn-secondary btn-icon" style="width:auto; padding:0.5rem 0.7rem; font-size:0.8rem;" onclick="toggleIngredientsPanel('${item.id}')" title="Adjust Ingredients">&#9881; Adjust</button>`
+                            : '';
+
+                        return `
+                        <div class="daily-item-container" id="item-container-${item.id}" style="margin-bottom:0.75rem; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom:0.75rem;">
+                            <div class="daily-item-row" style="display:flex; justify-content:space-between; align-items:center; gap: 1rem; flex-wrap: wrap;">
+                                <div class="daily-item-info">
+                                    <strong>${escapeHtml(item.mealItemName)}</strong>
+                                    <div class="nutrition-badges" style="margin-top:0.3rem;">
+                                        <div class="badge badge-cal">Cal <strong>${formatDecimal(item.totalNutrition.calories, 1)}</strong></div>
+                                        <div class="badge badge-prot">P <strong>${formatDecimal(item.totalNutrition.protein, 1)}g</strong></div>
+                                        <div class="badge badge-carb">C <strong>${formatDecimal(item.totalNutrition.carbohydrates, 1)}g</strong></div>
+                                        <div class="badge badge-fat">F <strong>${formatDecimal(item.totalNutrition.fat, 1)}g</strong></div>
+                                        <div class="badge badge-fib">Fib <strong>${formatDecimal(item.totalNutrition.fiber, 1)}g</strong></div>
+                                    </div>
+                                </div>
+                                <div class="daily-item-controls" style="display:flex; align-items:center; gap:0.5rem;">
+                                    ${adjustBtn}
+                                    <input type="number" min="0.1" step="0.1" value="${formatDecimal(item.servings, 2)}" id="servings-${item.id}" style="width:80px;" title="Servings">
+                                    <button type="button" class="btn btn-secondary" style="width:auto; padding:0.5rem 0.7rem; font-size:0.8rem;" onclick="updateDailyMealItemServings('${meal.id}', '${item.id}')">Save</button>
+                                    <button type="button" class="btn btn-danger btn-icon" onclick="removeDailyMealItem('${meal.id}', '${item.id}')" title="Remove">&times;</button>
+                                </div>
                             </div>
+                            ${ingredientsHtml}
                         </div>
-                    `).join('');
+                        `;
+                    }).join('');
 
                 const skipBtn = isSkipped
                     ? `<button type="button" class="btn btn-unskip" style="width:auto; padding:0.4rem 0.9rem; font-size:0.82rem;" onclick="setDailyMealSkipped('${meal.id}', false)">&#10003; Unskip</button>`
@@ -2802,7 +2845,7 @@
                     </div>
                     <div class="meal-section-body">
                         ${skippedBanner}
-                        <div>${mealItemsHtml}</div>
+                        <div style="display:flex; flex-direction:column; gap:0.5rem;">${mealItemsHtml}</div>
                         ${addFormHtml}
                     </div>
                 </div>`;
@@ -2859,6 +2902,45 @@
                 await loadDailyMeals();
             } catch (err) {
                 showNotification(`Failed to add meal item: ${err.message}`, 'error');
+            }
+        }
+
+        function toggleIngredientsPanel(mealMealItemId) {
+            const panel = document.getElementById(`ingredients-panel-${mealMealItemId}`);
+            if (panel) {
+                const isHidden = panel.style.display === 'none';
+                panel.style.display = isHidden ? 'block' : 'none';
+            }
+        }
+
+        async function saveMealItemIngredients(mealId, mealMealItemId) {
+            const panel = document.getElementById(`ingredients-panel-${mealMealItemId}`);
+            const rows = panel.querySelectorAll('.ingredient-adjust-row');
+            const ingredients = [];
+
+            rows.forEach(row => {
+                const id = row.dataset.id;
+                const quantityInput = row.querySelector('input[name="quantity"]');
+                const unitSelect = row.querySelector('select[name="unit"]');
+                ingredients.push({
+                    id: id,
+                    quantity: parseFloat(quantityInput.value),
+                    unitId: unitSelect.value
+                });
+            });
+
+            try {
+                const res = await fetch(`${getApiUrl()}/api/DailyMeals/UpdateMealItemIngredients/${mealId}/items/${mealMealItemId}/ingredients`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ingredients })
+                });
+                if (!res.ok) throw new Error(await readErrorMessage(res));
+
+                showNotification('Ingredient quantities updated.', 'success');
+                await loadDailyMeals();
+            } catch (err) {
+                showNotification(`Failed to update ingredients: ${err.message}`, 'error');
             }
         }
 

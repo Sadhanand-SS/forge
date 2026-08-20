@@ -59,6 +59,6 @@ public class DeleteCustomUnitCommandHandler
         }
 
         _context.UnitsOfMeasure.Remove(unit);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(CancellationToken.None);
     }
 }

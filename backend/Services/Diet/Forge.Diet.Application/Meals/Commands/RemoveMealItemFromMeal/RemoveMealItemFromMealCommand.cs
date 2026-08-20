@@ -34,6 +34,6 @@ public class RemoveMealItemFromMealCommandHandler
 
         meal.RemoveMealItem(command.MealMealItemId);
         _context.DailyMealMealItems.Remove(mealMealItem);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(CancellationToken.None);
     }
 }

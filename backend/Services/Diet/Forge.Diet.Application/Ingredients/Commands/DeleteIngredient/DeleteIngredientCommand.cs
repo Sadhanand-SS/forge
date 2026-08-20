@@ -33,6 +33,6 @@ public class DeleteIngredientCommandHandler
         }
 
         _context.Ingredients.Remove(ingredient);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _context.SaveChangesAsync(CancellationToken.None);
     }
 }

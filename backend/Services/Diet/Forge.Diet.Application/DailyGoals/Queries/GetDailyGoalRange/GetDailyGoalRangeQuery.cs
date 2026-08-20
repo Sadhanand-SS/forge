@@ -22,6 +22,9 @@ public class GetDailyGoalRangeQueryHandler
 
     public async Task<List<DailySummaryRangeItemDto>> HandleAsync(GetDailyGoalRangeQuery query, CancellationToken cancellationToken = default)
     {
+        // NOTE: CancellationToken.None is intentional. See GetDailyMealSummaryQuery for reasoning.
+        var ct = CancellationToken.None;
+
         var dailyMeals = await _context.DailyMeals
             .Where(m => m.Date >= query.StartDate && m.Date <= query.EndDate)
             .Include(m => m.MealItems)
@@ -29,15 +32,19 @@ public class GetDailyGoalRangeQueryHandler
                     .ThenInclude(mealItem => mealItem.Ingredients)
                         .ThenInclude(ingredient => ingredient.Ingredient)
                             .ThenInclude(ingredient => ingredient.Conversions)
+            .Include(m => m.MealItems)
+                .ThenInclude(item => item.Ingredients)
+                    .ThenInclude(ingredient => ingredient.Ingredient)
+                        .ThenInclude(ingredient => ingredient.Conversions)
             .AsNoTracking()
-            .ToListAsync(cancellationToken);
+            .ToListAsync(ct);
 
-        // 2. Fetch all DailyGoals up to EndDate (to find closest goal for each day in range)
+        // Fetch all DailyGoals up to EndDate (to find closest goal for each day in range)
         var dailyGoals = await _context.DailyGoals
             .Where(dg => dg.Date <= query.EndDate)
             .OrderBy(dg => dg.Date)
             .AsNoTracking()
-            .ToListAsync(cancellationToken);
+            .ToListAsync(ct);
 
         var result = new List<DailySummaryRangeItemDto>();
 
@@ -54,8 +61,7 @@ public class GetDailyGoalRangeQueryHandler
 
                 foreach (var item in dm.MealItems)
                 {
-                    if (item.MealItem == null) continue;
-                    var nutrition = item.MealItem.GetTotalNutrition();
+                    var nutrition = item.GetTotalNutrition();
                     eatenCal += nutrition.Calories * item.Servings;
                     eatenProt += nutrition.Protein * item.Servings;
                     eatenCarb += nutrition.Carbohydrates * item.Servings;

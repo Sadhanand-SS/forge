@@ -21,7 +21,7 @@ public class GetMealsQueryHandler
             .AsNoTracking()
             .OrderBy(meal => meal.Time)
             .ThenBy(meal => meal.Name)
-            .ToListAsync(cancellationToken);
+            .ToListAsync(CancellationToken.None);
 
         return meals.Select(meal => meal.ToDto()).ToList();
     }

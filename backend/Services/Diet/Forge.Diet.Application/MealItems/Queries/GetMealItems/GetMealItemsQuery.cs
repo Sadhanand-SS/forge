@@ -28,11 +28,11 @@ public class GetMealItemsQueryHandler
                     .ThenInclude(ing => ing.Conversions)
             .AsNoTracking()
             .OrderBy(m => m.Name)
-            .ToListAsync(cancellationToken);
+            .ToListAsync(CancellationToken.None);
 
         var units = await _context.UnitsOfMeasure
             .AsNoTracking()
-            .ToDictionaryAsync(u => u.Id, u => u.Name, cancellationToken);
+            .ToDictionaryAsync(u => u.Id, u => u.Name, CancellationToken.None);
 
         string getUnitName(Guid id) => units.TryGetValue(id, out var name) ? name : "Unknown";
 

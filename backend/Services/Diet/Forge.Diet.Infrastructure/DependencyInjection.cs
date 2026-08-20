@@ -14,7 +14,7 @@ public static class DependencyInjection
 
         services.AddDbContext<DietDbContext>((sp, options) =>
         {
-            options.UseNpgsql(connectionString);
+            options.UseNpgsql(connectionString, o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
         });
 
         services.AddScoped<IDietDbContext>(provider => provider.GetRequiredService<DietDbContext>());

@@ -68,7 +68,7 @@ public class SearchIngredientsQueryHandler
 
         // Fetch limit + 1 to see if there is a next page
         var fetchLimit = query.Limit > 0 ? query.Limit : 20;
-        var list = await dbQuery.Take(fetchLimit + 1).ToListAsync(cancellationToken);
+        var list = await dbQuery.Take(fetchLimit + 1).ToListAsync(CancellationToken.None);
 
         var hasNextPage = list.Count > fetchLimit;
         if (hasNextPage)
@@ -78,7 +78,7 @@ public class SearchIngredientsQueryHandler
 
         var units = await _context.UnitsOfMeasure
             .AsNoTracking()
-            .ToDictionaryAsync(u => u.Id, u => u.Name, cancellationToken);
+            .ToDictionaryAsync(u => u.Id, u => u.Name, CancellationToken.None);
 
         string getUnitName(Guid id) => units.TryGetValue(id, out var name) ? name : "Unknown";
 

@@ -19,9 +19,10 @@ internal static class MealMappingExtensions
         };
     }
 
-    public static DailyMealDto ToDto(this DailyMeal meal)
+    public static DailyMealDto ToDto(this DailyMeal meal, Dictionary<Guid, string>? unitNames = null)
     {
         var totalNutrition = meal.GetTotalNutrition();
+        var units = unitNames ?? new Dictionary<Guid, string>();
 
         return new DailyMealDto
         {
@@ -34,7 +35,7 @@ internal static class MealMappingExtensions
             IsSkipped = meal.IsSkipped,
             MealItems = meal.MealItems.Select(item =>
             {
-                var itemNutrition = item.MealItem.GetTotalNutrition();
+                var itemNutrition = item.GetTotalNutrition();
 
                 return new MealMealItemDto
                 {
@@ -42,14 +43,54 @@ internal static class MealMappingExtensions
                     MealItemId = item.MealItemId,
                     MealItemName = item.MealItem.Name,
                     Servings = item.Servings,
-                    TotalNutrition = itemNutrition.Scale(item.Servings).ToDto()
+                    TotalNutrition = itemNutrition.Scale(item.Servings).ToDto(),
+                    Ingredients = item.Ingredients.Select(ing =>
+                    {
+                        var compatibleUnits = new List<UnitOfMeasureDto>();
+
+                        var baseUnitId = ing.Ingredient.NutritionBasis.UnitId;
+                        var baseUnitName = units.TryGetValue(baseUnitId, out var bName) ? bName : "Unknown";
+                        compatibleUnits.Add(new UnitOfMeasureDto
+                        {
+                            Id = baseUnitId,
+                            Name = baseUnitName,
+                            Description = string.Empty,
+                            IsSystem = false
+                        });
+
+                        if (ing.Ingredient.Conversions != null)
+                        {
+                            foreach (var conv in ing.Ingredient.Conversions)
+                            {
+                                var targetName = units.TryGetValue(conv.TargetUnitId, out var tName) ? tName : "Unknown";
+                                compatibleUnits.Add(new UnitOfMeasureDto
+                                {
+                                    Id = conv.TargetUnitId,
+                                    Name = targetName,
+                                    Description = string.Empty,
+                                    IsSystem = false
+                                });
+                            }
+                        }
+
+                        return new DailyMealMealItemIngredientDto
+                        {
+                            Id = ing.Id,
+                            IngredientId = ing.IngredientId,
+                            IngredientName = ing.Ingredient.Name,
+                            Quantity = ing.Quantity,
+                            UnitId = ing.UnitId,
+                            UnitName = units.TryGetValue(ing.UnitId, out var uName) ? uName : "Unknown",
+                            CompatibleUnits = compatibleUnits
+                        };
+                    }).ToList()
                 };
             }).ToList(),
             TotalNutrition = totalNutrition.ToDto()
         };
     }
 
-    public static DailyMealSummaryDto ToDailySummaryDto(this IEnumerable<DailyMeal> meals, DateOnly date)
+    public static DailyMealSummaryDto ToDailySummaryDto(this IEnumerable<DailyMeal> meals, DateOnly date, Dictionary<Guid, string>? unitNames = null)
     {
         var mealList = meals.OrderBy(meal => meal.Meal.Time).ThenBy(meal => meal.Meal.Name).ToList();
         decimal calories = 0;
@@ -73,7 +114,7 @@ internal static class MealMappingExtensions
             Date = date,
             MealCount = mealList.Count,
             SkippedMealCount = mealList.Count(meal => meal.IsSkipped),
-            Meals = mealList.Select(meal => meal.ToDto()).ToList(),
+            Meals = mealList.Select(meal => meal.ToDto(unitNames)).ToList(),
             TotalNutrition = Nutrition.Create(calories, protein, carbohydrates, fat, fiber).ToDto()
         };
     }
